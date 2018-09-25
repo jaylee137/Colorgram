@@ -19,7 +19,7 @@ include_directories(SYSTEM 3rd_party/KMC
 link_directories(3rd_party/stxxl/build/install/lib)
 
 add_executable(colorgram-build cologram_build.cpp succinct_dbg.cpp)
-target_link_libraries(colorgram
+target_link_libraries(colorgram-build
                       /home/denes/PhD/singapore/color_graph/Colorgram/3rd_party/sdsl-lite/install/lib/libsdsl.a
                       stxxl
                       /home/denes/PhD/singapore/color_graph/cosmo_old/3rd_party_src/KMC/kmc_api/kmc_file.o

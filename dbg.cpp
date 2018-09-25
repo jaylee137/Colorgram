@@ -448,6 +448,7 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
     for (auto i : label_hash_vector) {
         sum += label_permutation[cids[i]] + 1;
     }
+    cerr << "Size of XBV bit vector: " << sum << endl;
     auto xbv = new bit_vector(sum);
     size_t index = 0;
     for (auto i : label_hash_vector) {

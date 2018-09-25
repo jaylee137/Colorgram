@@ -5,12 +5,6 @@ using namespace std;
 
 
 int main(int argc, char *argv[]) {
-    // 4 0 ../tests/test_lst.txt ../tests/edges/kmers ../tests/edges/begin ../tests/edges/end out
-    // 4 0 ../tests2/test_lst.txt ../tests2/edges/kmers ../tests2/edges/begin ../tests2/edges/end out
-    // 32 0 /media/denes/storage/cosmo/fna/complete/kmc2_list100_flat ../tests_ecoli100/kmers ../tests_ecoli100/begin ../tests_ecoli100/end out_ecoli100
-    // 32 0 /media/denes/storage/cosmo/fna/complete/kmc2_list10_flat ../tests_ecoli10/kmers ../tests_ecoli10/begin ../tests_ecoli10/end out_ecoli10
-    // 32 0 /media/denes/storage/cosmo/fna/complete/kmc2_list1_flat ../tests_ecoli1/kmers ../tests_ecoli1/begin ../tests_ecoli1/end out_ecoli1
-    // 32 0 /media/denes/storage/cosmo/human/transcripts/human_list100 ../tests_human100/kmers ../tests_human100/begin ../tests_human100/end out_human100
     if (argc < 7) {
         cerr
                 << "Usage: cologram <kmer> <cologram-type \\in {0, 1, 2}> <kmer list file> <kmer database>"
