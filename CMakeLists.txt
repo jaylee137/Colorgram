@@ -16,12 +16,15 @@ include_directories(SYSTEM 3rd_party/KMC
                     SYSTEM 3rd_party/stxxl/include
                     SYSTEM 3rd_party/sparsepp)
 
-link_directories(3rd_party/stxxl/build/install/lib)
+cmake_policy(SET CMP0015 NEW)
+
+link_directories(3rd_party/stxxl/build/install/lib
+                 3rd_party/sdsl-lite/install/lib)
 
 add_executable(colorgram-build cologram_build.cpp succinct_dbg.cpp)
 target_link_libraries(colorgram-build
-                      /home/denes/PhD/singapore/color_graph/Colorgram/3rd_party/sdsl-lite/install/lib/libsdsl.a
+                      sdsl
                       stxxl
-                      /home/denes/PhD/singapore/color_graph/cosmo_old/3rd_party_src/KMC/kmc_api/kmc_file.o
-                      /home/denes/PhD/singapore/color_graph/cosmo_old/3rd_party_src/KMC/kmc_api/kmer_api.o
-                      /home/denes/PhD/singapore/color_graph/cosmo_old/3rd_party_src/KMC/kmc_api/mmer.o)
+                      ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/KMC/kmc_api/kmc_file.o
+                      ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/KMC/kmc_api/kmer_api.o
+                      ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/KMC/kmc_api/mmer.o)

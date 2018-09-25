@@ -437,6 +437,26 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
     };
     stxxl::sort(indexes.begin(), indexes.end(), compare_indexes(), 64 * 1024ULL * 1024ULL * 1024ULL);
 
+#define SAVE_MULTIPLICITIES
+#ifdef SAVE_MULTIPLICITIES
+    {
+        string fname = "multiplicities.dat";
+        sdsl::osfstream out(fname, std::ios::binary | std::ios::trunc | std::ios::out);
+        if (!out) {
+            if (sdsl::util::verbose) {
+                std::cerr << "ERROR: store_to_file not successful for: '" << fname << "'" << std::endl;
+            }
+        }
+        structure_tree_node *child = structure_tree::add_child(NULL, NULL, util::class_name(*this));
+        size_t written_bytes = 0;
+        for (size_t i = 0; i < indexes.size(); ++i) {
+            written_bytes += write_member(indexes[i].first, out, child, "M[" + to_string(i) +"]");
+        }
+        structure_tree::add_size(child, written_bytes);
+        out.close();
+    };
+#endif
+
     // fill the label permutation vector
     int_vector_type label_permutation(color_table.size());
     for (size_t i = 0; i < indexes.size(); ++i) {
