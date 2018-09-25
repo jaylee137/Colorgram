@@ -447,7 +447,7 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
                 std::cerr << "ERROR: store_to_file not successful for: '" << fname << "'" << std::endl;
             }
         }
-        structure_tree_node *child = structure_tree::add_child(NULL, NULL, util::class_name(*this));
+        structure_tree_node *child = structure_tree::add_child(NULL, "", util::class_name(*this));
         size_t written_bytes = 0;
         for (size_t i = 0; i < indexes.size(); ++i) {
             written_bytes += write_member(indexes[i].first, out, child, "M[" + to_string(i) +"]");
@@ -464,20 +464,20 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
     }
 
     cerr << "Generating Succinct Label Vector X..." << endl;
-    size_t sum = 0;
-    for (auto i : label_hash_vector) {
-        sum += label_permutation[cids[i]] + 1;
-    }
-    cerr << "Size of XBV bit vector: " << sum << endl;
-    auto xbv = new bit_vector(sum);
-    size_t index = 0;
-    for (auto i : label_hash_vector) {
-        size_t aid = label_permutation[cids[i]];
-        (*xbv)[index + aid] = 1;
-        index += aid + 1;
-    }
-    sdbg->set_X(xbv);
-    delete xbv;
+    // size_t sum = 0;
+    // for (auto i : label_hash_vector) {
+    //     sum += label_permutation[cids[i]] + 1;
+    // }
+    // cerr << "Size of XBV bit vector: " << sum << endl;
+    // auto xbv = new bit_vector(sum);
+    // size_t index = 0;
+    // for (auto i : label_hash_vector) {
+    //     size_t aid = label_permutation[cids[i]];
+    //     (*xbv)[index + aid] = 1;
+    //     index += aid + 1;
+    // }
+    sdbg->set_X(label_hash_vector, label_permutation, cids);
+    // delete xbv;
 
     cerr << "Generating Succinct Color Table..." << endl;
     // create a set from the gap indexes

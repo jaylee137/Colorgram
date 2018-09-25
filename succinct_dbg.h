@@ -10,6 +10,7 @@
 
 #include "utils.hpp"
 #include "config.h"
+#include "select_support_mcl2.hpp"
 
 using namespace std;
 using namespace sdsl;
@@ -60,9 +61,12 @@ public:
 
     size_t get_num_of_nodes() const { return v; }
 
-    void set_X(bit_vector*& bv) { X = select_support_mcl<1, 1>(bv); }
+    void set_X(const int_vector_type& label_hash_vector, const int_vector_type& label_permutation,
+               sparse_hash_map<uint64_t, uint64_t>& cids) {
+        X = select_support_mcl2(label_hash_vector, label_permutation, cids);
+    }
 
-    void set_CT(sd_vector_builder*& vector_builder) {
+    void set_CT(sd_vector_builder *& vector_builder) {
         CT = sd_vector<>(*vector_builder);
         CT_rank = sd_vector<>::rank_1_type(&CT);
         CT_select = sd_vector<>::select_1_type(&CT);
@@ -100,7 +104,7 @@ private:
     size_t label_vect_size;
 
 
-    select_support_mcl<1, 1> X;
+    select_support_mcl2 X;
     sd_vector<> CT;
     sd_vector<>::rank_1_type CT_rank;
     sd_vector<>::select_1_type CT_select;

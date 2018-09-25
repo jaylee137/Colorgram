@@ -21,7 +21,7 @@ cmake_policy(SET CMP0015 NEW)
 link_directories(3rd_party/stxxl/build/install/lib
                  3rd_party/sdsl-lite/install/lib)
 
-add_executable(colorgram-build cologram_build.cpp succinct_dbg.cpp)
+add_executable(colorgram-build cologram_build.cpp succinct_dbg.cpp select_support_mcl2.hpp)
 target_link_libraries(colorgram-build
                       sdsl
                       stxxl
