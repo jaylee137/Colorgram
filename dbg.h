@@ -34,7 +34,7 @@ public:
         build_graph(pkmer_db_fname, pbegin_db_fname, pend_db_fname);
     }
 
-    void build_colored_graph(size_t color, const string& dna_str);
+    void build_colored_graph(uint32_t color, const string& dna_str);
 
     void print_stats();
 

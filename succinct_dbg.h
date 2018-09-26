@@ -32,6 +32,9 @@ public:
         // construct the edges wavelet tree
         construct(edges, tmp_fname, 1);
 
+        // construct the edges static vector for faster scanning purposes...
+        // construct_edges_static();
+
         // calculate T_F that stores the starting positions of the symbols in F
         // calculate F_node_cnt and L_node_cnt
         size_t fsum = 0;
@@ -41,6 +44,15 @@ public:
             F_node_cnt[i] = BF_rank.rank(T_F[i]);
             L_node_cnt[i] = BL_rank.rank(T[i]);
         }
+    }
+
+    SuccinctDeBruijnGraph(const string& input_fname) {
+        load(input_fname);
+
+        SBV = sd_vector<>(calculate_SBV());
+        SBV_rank = sd_vector<>::rank_1_type(&SBV);
+        SBV_select = sd_vector<>::select_1_type(&SBV);
+        label_vect_size = SBV_rank.rank(SBV.size());
     }
 
     uint8_t indegree(size_t index);
@@ -61,6 +73,8 @@ public:
 
     size_t get_num_of_nodes() const { return v; }
 
+    void set_C(uint32_t pC) { C = pC; }
+
     void set_X(const int_vector_type& label_hash_vector, const int_vector_type& label_permutation,
                sparse_hash_map<uint64_t, uint64_t>& cids) {
         X = select_support_mcl2(label_hash_vector, label_permutation, cids);
@@ -72,16 +86,35 @@ public:
         CT_select = sd_vector<>::select_1_type(&CT);
     }
 
-    size_t serialize_dbg(ostream& out, structure_tree_node *v = NULL, string name = "") const;
+    bool save(const string& output_fname) const;
 
-    size_t serialize_label_vect(ostream& out, structure_tree_node *v = NULL, string name = "") const;
-
-    size_t serialize_color_table(ostream& out, structure_tree_node *v = NULL, string name = "") const;
-
-    size_t serialize_storage_vect(ostream& out, structure_tree_node *v = NULL, string name = "") const;
+    void print_stats(ostream& out);
 
 private:
-    bit_vector calculate_SBV(const bit_vector& pBL, uint8_t ptype);
+    // void construct_edges_static();
+
+    bit_vector calculate_SBV(const bit_vector& pBL, uint8_t ptype = 0);
+
+    bit_vector calculate_SBV(uint8_t ptype = 0);
+
+    size_t save_dbg(ostream& out, structure_tree_node *v = NULL, string name = "") const;
+
+    size_t save_label_vect(ostream& out, structure_tree_node *v = NULL, string name = "") const;
+
+    size_t save_color_table(ostream& out, structure_tree_node *v = NULL, string name = "") const;
+
+    size_t save_storage_vect(ostream& out, structure_tree_node *v = NULL, string name = "") const;
+
+    void load_dbg(istream& in);
+
+    void load_label_vect(istream& in);
+
+    void load_color_table(istream& in);
+
+    void load_storage_vect(istream& in);
+
+    bool load(const string& input_fname);
+
 
     size_t n;
     size_t v;
@@ -98,6 +131,8 @@ private:
     array<size_t, SIGMA> F_node_cnt{};
     typedef wt_huff<rrr_vector<63>> wt_t;
     wt_t edges;
+    typedef typename stxxl::VECTOR_GENERATOR<uint8_t>::result uint8_t_vector_type;
+    uint8_t_vector_type edges_static;
     sd_vector<> SBV;
     sd_vector<>::rank_1_type SBV_rank;
     sd_vector<>::select_1_type SBV_select;
@@ -105,6 +140,7 @@ private:
 
 
     select_support_mcl2 X;
+    uint32_t C;
     sd_vector<> CT;
     sd_vector<>::rank_1_type CT_rank;
     sd_vector<>::select_1_type CT_select;

@@ -313,24 +313,17 @@ void ColoredDeBrujinGraph<KMERBITS>::build_graph(const string& kmer_db_fname, co
 
 
 template<uint16_t KMERBITS>
-void ColoredDeBrujinGraph<KMERBITS>::build_colored_graph(size_t color, const string& dna_str) {
-    // cout << sdbg->forward(10, symbol_to_bits('G')) << endl;
-    // cout << sdbg->forward(18, symbol_to_bits('A')) << endl;
-    // cout << sdbg->forward(7, symbol_to_bits('T')) << endl;
-    // cout << sdbg->forward(21, symbol_to_bits('C')) << endl;
-    // cout << sdbg->forward(20, symbol_to_bits('C')) << endl;
-    // cout << sdbg->forward(12, symbol_to_bits('T')) << endl;
-
+void ColoredDeBrujinGraph<KMERBITS>::build_colored_graph(uint32_t color, const string& dna_str) {
     size_t index = 0;
     for (char c : dna_str) {
         uint8_t ac = symbol_to_bits(c);
         if (ac != 255) {
-            // index = sdbg->get_next_symbol_index(index, symbol_to_bits(c));
+            index = sdbg->get_next_symbol_index(index, ac);
             size_t xi = sdbg->get_label_index(index);
             if (xi < label_hash_vector.size()) {
                 add_color(label_hash_vector[xi], color);
             }
-            index = sdbg->forward(index, symbol_to_bits(c));
+            index = sdbg->forward(index, ac);
         }
     }
     // process the $-tagged edge... (no need to search for the index of the edge - it must be the = with index)
@@ -342,6 +335,7 @@ void ColoredDeBrujinGraph<KMERBITS>::build_colored_graph(size_t color, const str
     // update the number of colors
     if (color >= C) {
         C = color + 1;
+        sdbg->set_C(C);
     }
 }
 
@@ -388,8 +382,7 @@ template<uint16_t KMERBITS>
 inline size_t ColoredDeBrujinGraph<KMERBITS>::add_color_class(const bitset<MAXCOLORS>& bitvector) {
     size_t hashv = hash_color_class(bitvector);
     // find the proper hash value that matches with the current bitvector
-    while (hashv == 0 || (cids.find(hashv) != cids.end() &&
-                          color_table[cids[hashv]].bitvector != bitvector)) {
+    while (hashv == 0 || (cids.find(hashv) != cids.end() && color_table[cids[hashv]].bitvector != bitvector)) {
         hashv = gen_next_hash_id(hashv);
     }
     // if this is a new color class
@@ -450,8 +443,10 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
         structure_tree_node *child = structure_tree::add_child(NULL, "", util::class_name(*this));
         size_t written_bytes = 0;
         for (size_t i = 0; i < indexes.size(); ++i) {
+            // cout << indexes[i].first << " " << indexes[i].second << " " << color_table[i].bitvector << endl;
             written_bytes += write_member(indexes[i].first, out, child, "M[" + to_string(i) +"]");
         }
+        // cout << endl << endl << endl;
         structure_tree::add_size(child, written_bytes);
         out.close();
     };
@@ -472,9 +467,14 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
     // auto xbv = new bit_vector(sum);
     // size_t index = 0;
     // for (auto i : label_hash_vector) {
-    //     size_t aid = label_permutation[cids[i]];
-    //     (*xbv)[index + aid] = 1;
-    //     index += aid + 1;
+    //     // size_t aid = label_permutation[cids[i]];
+    //     // cout << aid << endl;
+    //     if (cids.find(i) == cids.end()) {
+    //         cout << "trouble " << i << " " << label_hash_vector[i] << endl;
+    //     }
+    //     else {
+    //         cout << cids[i] << " " << i << " " << color_table[label_permutation[cids[i]]].bitvector << endl;
+    //     }
     // }
     sdbg->set_X(label_hash_vector, label_permutation, cids);
     // delete xbv;
@@ -483,7 +483,7 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
     // create a set from the gap indexes
     auto vector_builder = new sd_vector_builder((color_table.size() - gaps.size()) * C, set_bits);
     for (size_t i = 0, index = 0; i < indexes.size(); ++i, index += C) {
-        cerr << indexes[i].first << " " << indexes[i].second << endl;
+        // cerr << indexes[i].first << " " << indexes[i].second << endl;
         if (indexes[i].first == 0) {
             continue;
         }
@@ -517,42 +517,8 @@ void ColoredDeBrujinGraph<KMERBITS>::print_stats() {
 // saves the graph
 template<uint16_t KMERBITS>
 bool ColoredDeBrujinGraph<KMERBITS>::save_graph(const string& output_fname) {
-    auto save_to_bin_file = [&output_fname](string extension, auto fn) {
-        string fname = output_fname + extension;
-        sdsl::osfstream out(fname, std::ios::binary | std::ios::trunc | std::ios::out);
-        if (!out) {
-            if (sdsl::util::verbose) {
-                std::cerr << "ERROR: store_to_file not successful for: '" << fname << "'" << std::endl;
-            }
-            return false;
-        }
-        fn(out);
-        out.close();
-        if (util::verbose) {
-            std::cerr << "INFO: store_to_file: `" << fname << "`" << std::endl;
-        }
-
-        return true;
-    };
-
-    cerr << "Saving DBG..." << endl;
-    if (!save_to_bin_file(".dbg", [this](ostream& out) { sdbg->serialize_dbg(out); }))
-        return false;
-
-    // first sort the color table...
+    // first sort the color table, generate the label vector...
     sort_color_table();
 
-    cerr << "Saving Label Vector..." << endl;
-    if (!save_to_bin_file(".x", [this](ostream& out) { sdbg->serialize_label_vect(out); }))
-        return false;
-
-    cerr << "Saving Color Table..." << endl;
-    if (!save_to_bin_file(".ct", [this](ostream& out) { sdbg->serialize_color_table(out); }))
-        return false;
-
-    cerr << "Saving Storage Vector..." << endl;
-    if (!save_to_bin_file(".sbv", [this](ostream& out) { sdbg->serialize_storage_vect(out); }))
-        return false;
-
-    return true;
+    return sdbg->save(output_fname);
 }
