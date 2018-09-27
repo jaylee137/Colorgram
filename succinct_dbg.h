@@ -10,7 +10,6 @@
 
 #include "utils.hpp"
 #include "config.h"
-#include "select_support_mcl2.hpp"
 
 using namespace std;
 using namespace sdsl;
@@ -49,6 +48,14 @@ public:
     SuccinctDeBruijnGraph(const string& input_fname) {
         load(input_fname);
 
+        BL_rank = sd_vector<>::rank_1_type(&BL);
+        BL_select = sd_vector<>::select_1_type(&BL);
+        BF_rank = sd_vector<>::rank_1_type(&BF);
+        BF_select = sd_vector<>::select_1_type(&BF);
+        X_select = sd_vector<>::select_1_type(&X);
+        CT_rank = sd_vector<>::rank_1_type(&CT);
+        CT_select = sd_vector<>::select_1_type(&CT);
+
         SBV = sd_vector<>(calculate_SBV());
         SBV_rank = sd_vector<>::rank_1_type(&SBV);
         SBV_select = sd_vector<>::select_1_type(&SBV);
@@ -75,9 +82,10 @@ public:
 
     void set_C(uint32_t pC) { C = pC; }
 
-    void set_X(const int_vector_type& label_hash_vector, const int_vector_type& label_permutation,
-               sparse_hash_map<uint64_t, uint64_t>& cids) {
-        X = select_support_mcl2(label_hash_vector, label_permutation, cids);
+    void set_X(sd_vector_builder *& vector_builder) {
+        // X = select_support_mcl2(label_hash_vector, label_permutation, cids);
+        X = sd_vector<>(*vector_builder);
+        X_select = sd_vector<>::select_1_type(&X);
     }
 
     void set_CT(sd_vector_builder *& vector_builder) {
@@ -139,7 +147,8 @@ private:
     size_t label_vect_size;
 
 
-    select_support_mcl2 X;
+    sd_vector<> X;
+    sd_vector<>::select_1_type X_select;
     uint32_t C;
     sd_vector<> CT;
     sd_vector<>::rank_1_type CT_rank;

@@ -67,7 +67,13 @@ bit_vector SuccinctDeBruijnGraph::calculate_SBV(uint8_t ptype) {
 
 
 uint8_t SuccinctDeBruijnGraph::indegree(size_t index) {
-    return 0;
+    size_t _v = BL_rank.rank(index);
+    if (_v == 0) {
+        return 0;
+    }
+    size_t q = BF_select.select(_v);
+    size_t r = (_v > 1) ? q - BF_select.select(_v - 1) : q + 1;
+    return (uint8_t)(r);
 }
 
 
@@ -130,11 +136,7 @@ size_t SuccinctDeBruijnGraph::save_dbg(ostream& out, structure_tree_node *v, str
         written_bytes += write_member(T[i], out, child, "T[" + to_string(i) + "]");
     }
     written_bytes += BL.serialize(out, child, "BL");
-    written_bytes += BL_rank.serialize(out, child, "BL_rank");
-    written_bytes += BL_select.serialize(out, child, "BL_select");
     written_bytes += BF.serialize(out, child, "BF");
-    written_bytes += BF_rank.serialize(out, child, "BF_rank");
-    written_bytes += BF_select.serialize(out, child, "BF_select");
     written_bytes += edges.serialize(out, child, "edges");
     structure_tree::add_size(child, written_bytes);
     return written_bytes;
@@ -149,11 +151,7 @@ void SuccinctDeBruijnGraph::load_dbg(istream& in) {
         read_member(T[i], in);
     }
     BL.load(in);
-    BL_rank.load(in);
-    BL_select.load(in);
     BF.load(in);
-    BF_rank.load(in);
-    BF_select.load(in);
     edges.load(in);
 }
 
@@ -177,8 +175,8 @@ size_t SuccinctDeBruijnGraph::save_color_table(ostream& out, structure_tree_node
     size_t written_bytes = 0;
     written_bytes += write_member(C, out, child, "C");
     written_bytes += CT.serialize(out, child, "CT");
-    written_bytes += CT_rank.serialize(out, child, "CT_rank");
-    written_bytes += CT_select.serialize(out, child, "CT_select");
+    // written_bytes += CT_rank.serialize(out, child, "CT_rank");
+    // written_bytes += CT_select.serialize(out, child, "CT_select");
     structure_tree::add_size(child, written_bytes);
     return written_bytes;
 }
@@ -187,8 +185,8 @@ size_t SuccinctDeBruijnGraph::save_color_table(ostream& out, structure_tree_node
 void SuccinctDeBruijnGraph::load_color_table(istream& in) {
     read_member(C, in);
     CT.load(in);
-    CT_rank.load(in);
-    CT_select.load(in);
+    // CT_rank.load(in);
+    // CT_select.load(in);
 }
 
 
@@ -196,8 +194,8 @@ size_t SuccinctDeBruijnGraph::save_storage_vect(ostream& out, structure_tree_nod
     structure_tree_node *child = structure_tree::add_child(v, name, util::class_name(*this));
     size_t written_bytes = 0;
     written_bytes += SBV.serialize(out, child, "SBV");
-    written_bytes += SBV_rank.serialize(out, child, "SBV_rank");
-    written_bytes += SBV_select.serialize(out, child, "SBV_select");
+    // written_bytes += SBV_rank.serialize(out, child, "SBV_rank");
+    // written_bytes += SBV_select.serialize(out, child, "SBV_select");
     structure_tree::add_size(child, written_bytes);
     return written_bytes;
 }
@@ -205,8 +203,8 @@ size_t SuccinctDeBruijnGraph::save_storage_vect(ostream& out, structure_tree_nod
 
 void SuccinctDeBruijnGraph::load_storage_vect(istream& in) {
     SBV.load(in);
-    SBV_rank.load(in);
-    SBV_select.load(in);
+    // SBV_rank.load(in);
+    // SBV_select.load(in);
 }
 
 
@@ -277,9 +275,9 @@ bool SuccinctDeBruijnGraph::load(const string& input_fname) {
     if (!load_from_bin_file(input_fname + ".ct", [this](istream& in) { load_color_table(in); }))
         return false;
 
-    cerr << "Loading Storage Vector..." << endl;
-    if (!load_from_bin_file(input_fname + ".sbv", [this](istream& in) { load_storage_vect(in); }))
-        return false;
+    // cerr << "Loading Storage Vector..." << endl;
+    // if (!load_from_bin_file(input_fname + ".sbv", [this](istream& in) { load_storage_vect(in); }))
+    //     return false;
 
     return true;
 }
@@ -297,9 +295,27 @@ void SuccinctDeBruijnGraph::print_stats(ostream& out) {
     out << "Size of Label Vector in bytes: " << size_in_bytes(X) << endl;
     out << endl;
 
-    for (size_t i = 0, prev = 0; i < label_vect_size; ++i) {
-        size_t ai = X.select(i + 1) + 1;
-        cout << (ai - prev - 1) << endl;
-        prev = ai;
-    }
+    // size_t ss = 0;
+    // for (size_t i = 0, prev = 0; i < label_vect_size; ++i) {
+    //     size_t ai = X_select.select(i + 1) + 1;
+    //     ss += ai - prev - 1;
+    //     // cout << (ai - prev - 1) << endl;
+    //     prev = ai;
+    // }
+    // cout << ss << endl;
+
+    // for (size_t i = 0; i < BF.size(); ++i) {
+    //     cout << BF[i];
+    // }
+    // cout << endl;
+
+
+    // cout << "start...";
+    // uint32_t max = 0;
+    // for (size_t i = 0; i < edges.size(); ++i) {
+    //     // cout << i << " " << (int)indegree(i) << endl;
+    //     uint8_t j = indegree(i);
+    //     if (j > max) max = j;
+    // }
+    // cout << max << endl;
 }

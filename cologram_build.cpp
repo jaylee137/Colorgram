@@ -6,10 +6,9 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
     if (argc < 7) {
-        cerr
-                << "Usage: cologram <kmer> <cologram-type \\in {0, 1, 2}> <kmer list file> <kmer database>"
+        cerr << "Usage: cologram-build <kmer> <cologram-type \\in {0, 1, 2}> <kmer list file> <kmer database>"
                    "<begin kmer database> <end kmer database> <output-file>" << endl;
-        cerr << "Example usage: ./cologram 32 0 kmer_lst.txt kmers.kmc begin_kmers.kmc end_kmers.kmc out_db_name"
+        cerr << "Example usage: ./cologram-build 32 0 kmer_lst.txt kmers.kmc begin_kmers.kmc end_kmers.kmc out_db_name"
              << endl;
         exit(1);
     }
@@ -48,8 +47,7 @@ int main(int argc, char *argv[]) {
 
     cerr << "Creating color information..." << endl;
     // add colors for the dbg
-    size_t color_cnt = fnames.size();
-    for (size_t i = 0; i < color_cnt; ++i) {
+    for (uint32_t i = 0; i < (uint32_t)fnames.size(); ++i) {
         ifstream f(fnames[i]);
         cerr << i << " ";
         if (f.is_open()) {

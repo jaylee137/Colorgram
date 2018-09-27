@@ -459,15 +459,20 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
     }
 
     cerr << "Generating Succinct Label Vector X..." << endl;
-    // size_t sum = 0;
-    // for (auto i : label_hash_vector) {
-    //     sum += label_permutation[cids[i]] + 1;
-    // }
-    // cerr << "Size of XBV bit vector: " << sum << endl;
+    size_t length = 0;
+    for (auto i : label_hash_vector) {
+        length += label_permutation[cids[i]] + 1;
+    }
+    auto label_vector_builder = new sd_vector_builder(length, label_hash_vector.size());
     // auto xbv = new bit_vector(sum);
-    // size_t index = 0;
-    // for (auto i : label_hash_vector) {
-    //     // size_t aid = label_permutation[cids[i]];
+    size_t index = 0;
+    for (auto i : label_hash_vector) {
+        size_t aid = label_permutation[cids[i]];
+        index += aid;
+        label_vector_builder->set(index);
+        ++index;
+    }
+
     //     // cout << aid << endl;
     //     if (cids.find(i) == cids.end()) {
     //         cout << "trouble " << i << " " << label_hash_vector[i] << endl;
@@ -476,12 +481,12 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
     //         cout << cids[i] << " " << i << " " << color_table[label_permutation[cids[i]]].bitvector << endl;
     //     }
     // }
-    sdbg->set_X(label_hash_vector, label_permutation, cids);
+    sdbg->set_X(label_vector_builder);
     // delete xbv;
 
     cerr << "Generating Succinct Color Table..." << endl;
     // create a set from the gap indexes
-    auto vector_builder = new sd_vector_builder((color_table.size() - gaps.size()) * C, set_bits);
+    auto ct_vector_builder = new sd_vector_builder((color_table.size() - gaps.size()) * C, set_bits);
     for (size_t i = 0, index = 0; i < indexes.size(); ++i, index += C) {
         // cerr << indexes[i].first << " " << indexes[i].second << endl;
         if (indexes[i].first == 0) {
@@ -490,13 +495,13 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
         bitset<MAXCOLORS>& acolor_class = color_table[indexes[i].second].bitvector;
         for (uint32_t j = 0; j < C; ++j) {
             if (acolor_class[j]) {
-                vector_builder->set(index + j);
+                ct_vector_builder->set(index + j);
             }
         }
     }
-    sdbg->set_CT(vector_builder);
+    sdbg->set_CT(ct_vector_builder);
 
-    delete vector_builder;
+    delete ct_vector_builder;
 }
 
 
