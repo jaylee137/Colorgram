@@ -35,14 +35,7 @@ public:
         // construct_edges_static();
 
         // calculate T_F that stores the starting positions of the symbols in F
-        // calculate F_node_cnt and L_node_cnt
-        size_t fsum = 0;
-        for (uint8_t i = 0; i < SIGMA; ++i) {
-            T_F[i] = fsum;
-            fsum += edges.rank(edges.size(), id_to_bits(i + 1));
-            F_node_cnt[i] = BF_rank.rank(T_F[i]);
-            L_node_cnt[i] = BL_rank.rank(T[i]);
-        }
+        calc_F_L_node_cnt();
     }
 
     SuccinctDeBruijnGraph(const string& input_fname) {
@@ -60,15 +53,17 @@ public:
         SBV_rank = sd_vector<>::rank_1_type(&SBV);
         SBV_select = sd_vector<>::select_1_type(&SBV);
         label_vect_size = SBV_rank.rank(SBV.size());
+
+        calc_F_L_node_cnt();
     }
 
-    uint8_t indegree(size_t index);
+    inline uint8_t indegree(size_t index);
 
     size_t forward(size_t index, uint8_t c) const;
 
-    // size_t backward(size_t index, uint8_t c);
+    inline size_t backward(size_t index);
 
-    // size_t backward(size_t index);
+    bitset<MAXCOLORS> get_color_class(size_t index);
 
     size_t get_next_symbol_index(size_t index, uint8_t c) const;
 
@@ -104,6 +99,19 @@ private:
     bit_vector calculate_SBV(const bit_vector& pBL, uint8_t ptype = 0);
 
     bit_vector calculate_SBV(uint8_t ptype = 0);
+
+    void calc_F_L_node_cnt() {
+        // calculate F_node_cnt and L_node_cnt
+        size_t fsum = 0;
+        for (uint8_t i = 0; i < SIGMA; ++i) {
+            T_F[i] = fsum;
+            fsum += edges.rank(edges.size(), id_to_bits(i + 1));
+            F_node_cnt[i] = BF_rank.rank(T_F[i]);
+            L_node_cnt[i] = BL_rank.rank(T[i]);
+        }
+    }
+
+    void update_color_class(size_t index, bitset<MAXCOLORS>& color_class);
 
     size_t save_dbg(ostream& out, structure_tree_node *v = NULL, string name = "") const;
 

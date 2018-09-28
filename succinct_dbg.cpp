@@ -66,14 +66,14 @@ bit_vector SuccinctDeBruijnGraph::calculate_SBV(uint8_t ptype) {
 }
 
 
-uint8_t SuccinctDeBruijnGraph::indegree(size_t index) {
+inline uint8_t SuccinctDeBruijnGraph::indegree(size_t index) {
     size_t _v = BL_rank.rank(index);
     if (_v == 0) {
         return 0;
     }
     size_t q = BF_select.select(_v);
     size_t r = (_v > 1) ? q - BF_select.select(_v - 1) : q + 1;
-    return (uint8_t)(r);
+    return (uint8_t) (r);
 }
 
 
@@ -90,14 +90,79 @@ size_t SuccinctDeBruijnGraph::forward(size_t index, uint8_t c) const {
 }
 
 
+void SuccinctDeBruijnGraph::update_color_class(size_t index, bitset<MAXCOLORS>& color_class) {
+    // get the label index
+    size_t xi = SBV_rank.rank(index);
+    // get the row index of the color table
+    size_t ci = (xi == 0) ? X_select.select(xi + 1) : X_select.select(xi + 1) - X_select.select(xi) - 1;
+    // for (size_t i, ri = CT_rank.rank(ci * C + 1), mc = (ci + 1) * C;
+    //      i < mc && i < CT.size() - 1; i = CT_select.select(++ri)) {
+    //     CT.
+    //     i = CT_select.select()
+    //     color_class[i] = 1;
+    // }
+    for (size_t i = ci * C, mc = (ci + 1) * C, j = 0; i < mc; ++i, ++j) {
+        if (CT[i]) {
+            color_class[j] = 1;
+        }
+    }
+}
+
+
+inline size_t SuccinctDeBruijnGraph::backward(size_t _q) {
+    // find character c
+    uint8_t cid = 0;
+    for (cid = 0; cid < SIGMA; ++cid) {
+        if (T_F[cid] <= _q) {
+            break;
+        }
+    }
+    return edges.select(_q - T_F[cid] + 1, id_to_bits(cid + 1));
+}
+
+
+bitset<MAXCOLORS> SuccinctDeBruijnGraph::get_color_class(size_t index) {
+    bitset<MAXCOLORS> color_class;
+    // mark the visited nodes...
+    // sparse_hash_map<size_t, uint8_t> visited;
+    // size_t r = BL_rank.rank(index);
+    // size_t startnode_index = (r == 0) ? 0 : BL_select.select(r) + 1;
+    stack<size_t> s;
+    s.push(index);
+    while (!s.empty()) {
+        size_t edge_index = s.top();
+        s.pop();
+        // if the actual edge was saved
+        if (SBV[edge_index] == 1) {
+            update_color_class(edge_index, color_class);
+        }
+        else {
+            // get the incoming edges
+            size_t _v = BL_rank.rank(edge_index);
+            // if we hit the first node => the color class contain all the colors...
+            if (_v == 0) {
+                return bitset<MAXCOLORS>().set();
+            }
+            size_t q = BF_select.select(_v);
+            size_t r = (_v > 1) ? q - BF_select.select(_v - 1) : q + 1;
+            for (size_t _q = q - r + 1; _q <= q; ++_q) {
+                // step backward - push to the stack each incoming edges
+                s.push(backward(_q));
+            }
+        }
+    }
+    return color_class;
+}
+
+
 size_t SuccinctDeBruijnGraph::get_next_symbol_index(size_t index, uint8_t c) const {
     // static wt_t::const_iterator start_it = edges.begin();
-    static uint8_t first_char = symbol_to_bits('A');
+    // static uint8_t first_char = symbol_to_bits('A');
     assert(c != 0);
 
-    if (c == first_char) {
-        return index;
-    }
+    // if (c == first_char) {
+    //     return index;
+    // }
     return edges.select(edges.rank(index, c) + 1, c);
     // for (size_t i = index; i < edges.size(); ++i) {
     //     if (edges[i] == c) {
@@ -295,14 +360,27 @@ void SuccinctDeBruijnGraph::print_stats(ostream& out) {
     out << "Size of Label Vector in bytes: " << size_in_bytes(X) << endl;
     out << endl;
 
-    // size_t ss = 0;
-    // for (size_t i = 0, prev = 0; i < label_vect_size; ++i) {
-    //     size_t ai = X_select.select(i + 1) + 1;
-    //     ss += ai - prev - 1;
-    //     // cout << (ai - prev - 1) << endl;
-    //     prev = ai;
-    // }
-    // cout << ss << endl;
+    for (size_t i = 0; i < CT.size() / C; ++i) {
+        for (size_t j = 0; j < C; ++j) {
+            cout << CT[i * C + j];
+        }
+        cout << endl;
+    }
+    cout << endl;
+
+    for (size_t i = 0; i < edges.size(); ++i) {
+        cout << i << " " << SBV[i] << endl;
+    }
+    cout << endl;
+
+    size_t ss = 0;
+    for (size_t i = 0, prev = 0; i < label_vect_size; ++i) {
+        size_t ai = X_select.select(i + 1) + 1;
+        ss += ai - prev - 1;
+        cout << i << " " << (ai - prev - 1) << endl;
+        prev = ai;
+    }
+    cout << ss << endl;
 
     // for (size_t i = 0; i < BF.size(); ++i) {
     //     cout << BF[i];
@@ -310,12 +388,13 @@ void SuccinctDeBruijnGraph::print_stats(ostream& out) {
     // cout << endl;
 
 
-    // cout << "start...";
-    // uint32_t max = 0;
-    // for (size_t i = 0; i < edges.size(); ++i) {
-    //     // cout << i << " " << (int)indegree(i) << endl;
-    //     uint8_t j = indegree(i);
-    //     if (j > max) max = j;
-    // }
-    // cout << max << endl;
+    cout << "start...";
+    uint32_t max = 0;
+    for (size_t i = 0; i < edges.size(); ++i) {
+        // cout << i << " " << (int)indegree(i) << endl;
+        // uint8_t j = indegree(i);
+        // if (j > max) max = j;
+        cout << i << " " << get_color_class(i).to_string() << endl;
+    }
+    cout << max << endl;
 }
