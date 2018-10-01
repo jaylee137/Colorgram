@@ -36,7 +36,11 @@ public:
 
     void build_colored_graph(uint32_t color, const string& dna_str);
 
+    SuccinctDeBruijnGraph* get_sdbg() { return sdbg; }
+
     void print_stats();
+
+    void sort_color_table();
 
     bool save_graph(const string& output_fname);
 
@@ -58,8 +62,6 @@ private:
         // return rand_rng();
         return hashv + 1;
     }
-
-    void sort_color_table();
 
     array<bitset<KMERBITS>, SIGMA + 1> shifted_sids;
 

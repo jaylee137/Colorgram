@@ -1,0 +1,3 @@
+/home/denes/PhD/singapore/color_graph/Colorgram/tests/1.fna
+/home/denes/PhD/singapore/color_graph/Colorgram/tests/2.fna
+/home/denes/PhD/singapore/color_graph/Colorgram/tests/3.fna

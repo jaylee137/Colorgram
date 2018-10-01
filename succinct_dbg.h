@@ -20,10 +20,11 @@ class SuccinctDeBruijnGraph {
 public:
     SuccinctDeBruijnGraph(size_t pn, uint32_t pk, uint8_t ptype, const array<size_t, SIGMA>& pT,
                           const bit_vector& pBL, const bit_vector& pBF,
-                          const string& tmp_fname) : n(pn), k(pk), T(pT), BL(sd_vector<>(pBL)), BF(sd_vector<>(pBF)),
+                          const string& tmp_fname) : n(pn), k(pk), T(pT), BL(pBL), BF(pBF),
                                                      BL_rank(&BL), BL_select(&BL), BF_rank(&BF), BF_select(&BF),
                                                      SBV(calculate_SBV(pBL, ptype)), SBV_rank(&SBV), SBV_select(&SBV),
-                                                     label_vect_size(SBV_rank.rank(SBV.size())) {
+                                                     label_vect_size(SBV_rank.rank(SBV.size())),
+                                                     start_node_length((uint8_t)(BL_select.select(1) + 1)) {
 
         // number of nodes
         v = BL_rank.rank(BL.size());
@@ -46,30 +47,46 @@ public:
         BF_rank = sd_vector<>::rank_1_type(&BF);
         BF_select = sd_vector<>::select_1_type(&BF);
         X_select = sd_vector<>::select_1_type(&X);
-        CT_rank = sd_vector<>::rank_1_type(&CT);
         CT_select = sd_vector<>::select_1_type(&CT);
 
         SBV = sd_vector<>(calculate_SBV());
         SBV_rank = sd_vector<>::rank_1_type(&SBV);
         SBV_select = sd_vector<>::select_1_type(&SBV);
         label_vect_size = SBV_rank.rank(SBV.size());
+        start_node_length = (uint8_t) (BL_select.select(1) + 1);
 
         calc_F_L_node_cnt();
     }
 
-    inline uint8_t indegree(size_t index);
+    uint8_t indegree(size_t index);
+
+    uint8_t outdegree(size_t index);
 
     size_t forward(size_t index, uint8_t c) const;
 
     inline size_t backward(size_t index);
 
+    uint8_t get_start_node_length() const { return start_node_length; }
+
     bitset<MAXCOLORS> get_color_class(size_t index);
+
+    uint8_t get_edge(size_t index) const { return edges[index]; }
+
+    inline size_t get_label(size_t index) const {
+        return (index == 0) ? X_select.select(index + 1) : X_select.select(index + 1) - X_select.select(index) - 1;
+    }
+
+    void update_color_class(size_t index, bitset<MAXCOLORS>& color_class, size_t& num_of_colors);
+
+    bool get_BL(size_t index) { return (bool)BL[index]; }
+
+    bool get_BF(size_t index) { return (bool)BF[index]; }
 
     size_t get_next_symbol_index(size_t index, uint8_t c) const;
 
     size_t get_label_index(size_t index) const;
 
-    size_t get_label_vect_size() const;
+    size_t get_label_vect_size() const { return label_vect_size; }
 
     size_t get_num_of_edges() const { return n; }
 
@@ -85,7 +102,6 @@ public:
 
     void set_CT(sd_vector_builder *& vector_builder) {
         CT = sd_vector<>(*vector_builder);
-        CT_rank = sd_vector<>::rank_1_type(&CT);
         CT_select = sd_vector<>::select_1_type(&CT);
     }
 
@@ -96,22 +112,11 @@ public:
 private:
     // void construct_edges_static();
 
+    void calc_F_L_node_cnt();
+
     bit_vector calculate_SBV(const bit_vector& pBL, uint8_t ptype = 0);
 
     bit_vector calculate_SBV(uint8_t ptype = 0);
-
-    void calc_F_L_node_cnt() {
-        // calculate F_node_cnt and L_node_cnt
-        size_t fsum = 0;
-        for (uint8_t i = 0; i < SIGMA; ++i) {
-            T_F[i] = fsum;
-            fsum += edges.rank(edges.size(), id_to_bits(i + 1));
-            F_node_cnt[i] = BF_rank.rank(T_F[i]);
-            L_node_cnt[i] = BL_rank.rank(T[i]);
-        }
-    }
-
-    void update_color_class(size_t index, bitset<MAXCOLORS>& color_class);
 
     size_t save_dbg(ostream& out, structure_tree_node *v = NULL, string name = "") const;
 
@@ -153,13 +158,13 @@ private:
     sd_vector<>::rank_1_type SBV_rank;
     sd_vector<>::select_1_type SBV_select;
     size_t label_vect_size;
+    uint8_t start_node_length;
 
 
     sd_vector<> X;
     sd_vector<>::select_1_type X_select;
     uint32_t C;
     sd_vector<> CT;
-    sd_vector<>::rank_1_type CT_rank;
     sd_vector<>::select_1_type CT_select;
 };
 

@@ -468,6 +468,7 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
     size_t index = 0;
     for (auto i : label_hash_vector) {
         size_t aid = label_permutation[cids[i]];
+        // cerr << cids[i] << " " << aid << endl;
         index += aid;
         label_vector_builder->set(index);
         ++index;
@@ -522,8 +523,5 @@ void ColoredDeBrujinGraph<KMERBITS>::print_stats() {
 // saves the graph
 template<uint16_t KMERBITS>
 bool ColoredDeBrujinGraph<KMERBITS>::save_graph(const string& output_fname) {
-    // first sort the color table, generate the label vector...
-    sort_color_table();
-
     return sdbg->save(output_fname);
 }

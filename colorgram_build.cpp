@@ -71,6 +71,8 @@ int main(int argc, char *argv[]) {
 
     dbg.print_stats();
 
+    dbg.sort_color_table();
+
     // save the graph: out_db_fname.dbg, out_db_fname.ct, out_db_fname.x
     dbg.save_graph(out_db_fname);
 

@@ -29,3 +29,11 @@ cd ../
 # SPARSEPP
 git clone https://github.com/greg7mdp/sparsepp.git
 
+# Google Test
+git clone https://github.com/google/googletest.git
+cd googletest/googletest
+mkdir build
+cd build 
+cmake ../
+make
+

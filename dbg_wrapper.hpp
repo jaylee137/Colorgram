@@ -60,6 +60,26 @@ public:
         }
     }
 
+    SuccinctDeBruijnGraph* get_sdbg() {
+        if (k <= KMER8BYTES) {
+            return dbg8->get_sdbg();
+        }
+        else if (k <= KMER16BYTES) {
+            return dbg16->get_sdbg();
+        }
+        else if (k <= KMER24BYTES) {
+            return dbg24->get_sdbg();
+        }
+        else if (k <= KMER32BYTES) {
+            return dbg32->get_sdbg();
+        }
+        else if (k <= KMER40BYTES) {
+            return dbg40->get_sdbg();
+        }
+
+        return nullptr;
+    }
+
     void print_stats() {
         if (k <= KMER8BYTES) {
             dbg8->print_stats();
@@ -75,6 +95,24 @@ public:
         }
         else if (k <= KMER40BYTES) {
             dbg40->print_stats();
+        }
+    }
+
+    void sort_color_table() {
+        if (k <= KMER8BYTES) {
+            dbg8->sort_color_table();
+        }
+        else if (k <= KMER16BYTES) {
+            dbg16->sort_color_table();
+        }
+        else if (k <= KMER24BYTES) {
+            dbg24->sort_color_table();
+        }
+        else if (k <= KMER32BYTES) {
+            dbg32->sort_color_table();
+        }
+        else if (k <= KMER40BYTES) {
+            dbg40->sort_color_table();
         }
     }
 
