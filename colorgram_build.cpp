@@ -4,6 +4,69 @@
 using namespace std;
 
 
+void create_color_information(DBGWrapper& dbg, const string& kmer_list_fname) {
+    // check whether the kmer list files do exist
+    ifstream kmer_lst_file(kmer_list_fname);
+    string fname;
+    vector<string> fnames;
+    while (getline(kmer_lst_file, fname)) {
+        if (file_exists(fname)) {
+            fnames.push_back(fname);
+        }
+        else {
+            cerr << "Unable to open file '" << fname << "'" << endl;
+            exit(1);
+        }
+    }
+    kmer_lst_file.close();
+
+    // add colors for the dbg
+    for (uint32_t i = 0; i < (uint32_t)fnames.size(); ++i) {
+        ifstream f(fnames[i]);
+        cerr << i << " ";
+        if (f.is_open()) {
+            string line;
+            // the first line is just a header...
+            while(getline(f, line)) {
+                // the second line contains the actual (flatten) DNA data
+                getline(f, line);
+
+                dbg.build_colored_graph(i, line);
+            }
+
+            f.close();
+        }
+        else {
+            cerr << "Unable to open file '" << fnames[i] << "'" << endl;
+            exit(1);
+        }
+    }
+}
+
+void create_color_information_one_file_mode(DBGWrapper& dbg, const string& fname) {
+    ifstream f(fname);
+
+    if (f.is_open()) {
+        string line;
+        size_t i = 0;
+        // the first line is just a header...
+        while(getline(f, line)) {
+            cerr << i << " ";
+            // the second line contains the actual (flatten) DNA data
+            getline(f, line);
+
+            dbg.build_colored_graph(i++, line);
+        }
+
+        f.close();
+    }
+    else {
+        cerr << "Unable to open file '" << fname << "'" << endl;
+        exit(1);
+    }
+}
+
+
 int main(int argc, char *argv[]) {
     if (argc < 7) {
         cerr << "Usage: cologram-build <kmer> <cologram-type \\in {0, 1, 2}> <kmer list file> <kmer database>"
@@ -27,45 +90,15 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    // chech whether the kmer list files do exist
-    ifstream kmer_lst_file(kmer_list_fname);
-    string fname;
-    vector<string> fnames;
-    while (getline(kmer_lst_file, fname)) {
-        if (file_exists(fname)) {
-            fnames.push_back(fname);
-        }
-        else {
-            cerr << "Unable to open file '" << fname << "'" << endl;
-            exit(1);
-        }
-    }
-    kmer_lst_file.close();
-
     // create the de Bruijn graph
     DBGWrapper dbg(k, cologram_type, kmer_db_fname, begin_db_fname, end_db_fname);
 
     cerr << "Creating color information..." << endl;
-    // add colors for the dbg
-    for (uint32_t i = 0; i < (uint32_t)fnames.size(); ++i) {
-        ifstream f(fnames[i]);
-        cerr << i << " ";
-        if (f.is_open()) {
-            string line;
-            // the first line is just a header...
-            while(getline(f, line)) {
-                // the second line contains the actual (flatten) DNA data
-                getline(f, line);
-
-                dbg.build_colored_graph(i, line);
-            }
-
-            f.close();
-        }
-        else {
-            cerr << "Unable to open file '" << fnames[i] << "'" << endl;
-            exit(1);
-        }
+    if (argc == 7) {
+        create_color_information(dbg, kmer_list_fname);
+    }
+    else {
+        create_color_information_one_file_mode(dbg, kmer_list_fname);
     }
     cerr << endl;
 

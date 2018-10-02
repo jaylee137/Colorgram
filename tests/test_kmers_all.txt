@@ -1,0 +1,6 @@
+> 1st read
+GACTTACAGATC
+> 2nd read
+GACTGACATC
+> 3rd read
+CGATCATC

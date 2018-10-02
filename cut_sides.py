@@ -35,13 +35,15 @@ def cut_side(k, fname, kmc_dir):
                             end.write(l[-k + 1 :])
 
 
-def cut_sides(k, file_list, kmc_dir):
+def cut_sides(k, file_list, kmc_dir, onefile=False):
     if k < 2:
         print "k must be >= 2..."
     if not os.path.isdir(kmc_dir):
         print kmc_dir, "does not exists..."
     elif not os.path.exists(file_list):
         print file_list, "does not exists..."
+    elif onefile:
+        cut_side(k, file_list, kmc_dir)
     elif check_files(file_list):
         with open(file_list) as f:
             for l in f:
@@ -54,4 +56,4 @@ if __name__ == "__main__":
         print "Bad argument list..."
         print "example usage: ./colorgra_tool -k=32 file_list.txt kmc-files-dir"
     else:
-        cut_sides(int(sys.argv[1][3:]), sys.argv[2], sys.argv[3])
+        cut_sides(int(sys.argv[1][3:]), sys.argv[2], sys.argv[3], ("-m" in sys.argv))

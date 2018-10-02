@@ -2,7 +2,7 @@
 
 if test "$#" -lt 4; then
     echo "Too few arguments were given..."
-else
+elif test "$#" -eq 4; then
     # example usage: ./colorgra_tool -k=32 file_list.txt kmc-files-dir out-filename
 
     mkdir -p $3/
@@ -94,4 +94,50 @@ else
 
     echo build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4
     build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4
+else
+    # example usage: ./colorgra_tool -k=32 -m file_list.txt kmc-files-dir out-filename
+    mkdir -p $3/
+    rm $3/*kmc_pre
+    rm $3/*kmc_suf
+    # cut the beginnings, ends of the lists
+    python cut_sides.py "$@"
+
+
+    # #############CALCULATE THE SIDES#############
+
+    # calculate k - 1
+    K_1="$((${1/-k=/}-1))"
+
+    # create temp tidrectory for kmc
+    mkdir -p kmc_temp
+    ls -d -1 $3/* | xargs -l -i ./3rd_party/KMC/bin/kmc -ci0 -fm -k$K_1 -b -m1 -cs1 {} {} kmc_temp
+    # renaming the begin and end kmer databases...
+    `mv $3/*begin.kmc_pre $3/begin.kmc_pre`
+    `mv $3/*begin.kmc_suf $3/begin.kmc_suf`
+    `mv $3/*end.kmc_pre $3/end.kmc_pre`
+    `mv $3/*end.kmc_suf $3/end.kmc_suf`
+
+    # #############CALCULATE THE EDGES#############
+
+    # get value k
+    K="$((${1/-k=/}))"
+    ./3rd_party/KMC/bin/kmc -ci0 -fm -k$K -b -m1 -cs1 $2 $2 kmc_temp
+    
+    `mv $2.kmc_pre $3/kmers.kmc_pre`
+    `mv $2.kmc_suf $3/kmers.kmc_suf`
+
+    # count the number of lines in the given kmer list file
+    MAXCOLORS=`cat $2 | sed '/^\s*$/d' | wc -l`
+    MAXCOLORS=$((MAXCOLORS / 2))
+    echo compiling with $MAXCOLORS colors
+
+    # build colorgram
+    mkdir -p build
+    cd build
+    cmake ../ -DMAXCOLORS=$MAXCOLORS
+    make
+    cd ../
+
+    echo build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4 -m
+    build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4 -m
 fi
