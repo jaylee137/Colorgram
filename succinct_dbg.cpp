@@ -215,17 +215,17 @@ size_t SuccinctDeBruijnGraph::get_next_symbol_index(size_t index, uint8_t c) con
     //     return index;
     // }
     // return edges.select(edges.rank(index, c) + 1, c);
-    for (size_t i = index; i < edges.size(); ++i) {
-        if (edges_static[i] == c) {
-            return i;
-        }
-    }
-    // // in normal circumstances this could never happen...
     // for (size_t i = index; i < edges.size(); ++i) {
-    //     if (edges[i] == c) {
+    //     if (edges_static[i] == c) {
     //         return i;
     //     }
     // }
+    // // in normal circumstances this could never happen...
+    for (size_t i = index; i < edges.size(); ++i) {
+        if (edges[i] == c) {
+            return i;
+        }
+    }
     return edges.size();
 
 }
