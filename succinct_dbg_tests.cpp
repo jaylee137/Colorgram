@@ -1,59 +1,5 @@
 #include <gtest/gtest.h>
-#include "dbg_wrapper.hpp"
-#include "utils.hpp"
-
-SuccinctDeBruijnGraph *simulate(uint32_t k, uint8_t cologram_type, string kmer_list_fname, string kmer_db_fname,
-                                string begin_db_fname, string end_db_fname) {
-    // check that the kmer list file exists
-    if (!file_exists(kmer_list_fname)) {
-        cerr << "Unable to open file '" << kmer_list_fname << "'" << endl;
-        EXPECT_FALSE(true);
-    }
-
-    // chech whether the kmer list files do exist
-    ifstream kmer_lst_file(kmer_list_fname);
-    string fname;
-    vector<string> fnames;
-    while (getline(kmer_lst_file, fname)) {
-        if (file_exists(fname)) {
-            fnames.push_back(fname);
-        }
-        else {
-            cerr << "Unable to open file '" << fname << "'" << endl;
-            EXPECT_FALSE(true);
-        }
-    }
-    kmer_lst_file.close();
-
-    // create the de Bruijn graph
-    DBGWrapper dbg(k, cologram_type, kmer_db_fname, begin_db_fname, end_db_fname);
-
-    // add colors for the dbg
-    for (uint32_t i = 0; i < (uint32_t) fnames.size(); ++i) {
-        ifstream f(fnames[i]);
-        cerr << i << " ";
-        if (f.is_open()) {
-            string line;
-            // the first line is just a header...
-            while (getline(f, line)) {
-                // the second line contains the actual (flatten) DNA data
-                getline(f, line);
-
-                dbg.build_colored_graph(i, line);
-            }
-
-            f.close();
-        }
-        else {
-            cerr << "Unable to open file '" << fnames[i] << "'" << endl;
-            EXPECT_FALSE(true);
-        }
-    }
-
-    dbg.sort_color_table();
-
-    return dbg.get_sdbg();
-}
+#include "builder.hpp"
 
 void test_str_forward(SuccinctDeBruijnGraph *sdbg, string str, vector<size_t> fv) {
     size_t index = 0;
@@ -79,12 +25,16 @@ void test_str_forward(SuccinctDeBruijnGraph *sdbg, string str, vector<size_t> fv
 // }
 
 TEST(DBGTest, DBG1) {
-    SuccinctDeBruijnGraph *sdbg = simulate(4, 0, "../tests/test_lst.txt", "../tests/edges/kmers",
-                                           "../tests/edges/begin", "../tests/edges/end");
+    DBGWrapper *dbg = build_graph(4, 0, "../tests/test_lst.txt", "../tests/edges/kmers", "../tests/edges/begin",
+                                  "../tests/edges/end", "", false, false);
+    auto sdbg = dbg->get_sdbg();
 
     ASSERT_EQ(25, sdbg->get_num_of_edges());
     ASSERT_EQ(20, sdbg->get_num_of_nodes());
     ASSERT_EQ(2, sdbg->get_start_node_length());
+    ASSERT_EQ(3, sdbg->get_C());
+    ASSERT_EQ(4, sdbg->get_k());
+    ASSERT_EQ(10, sdbg->get_label_vect_size());
     ASSERT_GE(MAXCOLORS, 4);
 
     // test edge list
@@ -157,6 +107,68 @@ TEST(DBGTest, DBG1) {
     for (size_t i = 0; i < color_class_ids.size(); ++i) {
         ASSERT_EQ(CT_all[color_class_ids[i]], sdbg->get_color_class(i));
     }
+
+    delete sdbg;
+}
+
+
+TEST(DBGTest, DBG2) {
+    DBGWrapper *dbg = build_graph(4, 0, "../tests/test_kmers_all.txt", "../tests/edges2/kmers", "../tests/edges2/begin",
+                                  "../tests/edges2/end", "", true, false);
+    auto sdbg = dbg->get_sdbg();
+
+    ASSERT_EQ(27, sdbg->get_num_of_edges());
+    ASSERT_EQ(22, sdbg->get_num_of_nodes());
+    ASSERT_EQ(1, sdbg->get_start_node_length());
+    ASSERT_EQ(3, sdbg->get_C());
+    ASSERT_EQ(4, sdbg->get_k());
+    ASSERT_EQ(10, sdbg->get_label_vect_size());
+    ASSERT_GE(MAXCOLORS, 4);
+
+    // test edge list
+    string edge_lst = "CGTGC$CGTAAT$CCAAGTACATAACC";
+    for (size_t i = 0; i < edge_lst.length(); ++i) {
+        ASSERT_EQ(edge_lst[i], bits_to_char(sdbg->get_edge(i)));
+    }
+
+    // test in-degree
+    vector<uint8_t> in_degrees{0, 2, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1};
+    for (size_t i = 0; i < in_degrees.size(); ++i) {
+        ASSERT_EQ(in_degrees[i], sdbg->indegree(i));
+    }
+    //
+    // test out-degree
+    vector<uint8_t> out_degrees{1, 2, 2, 1, 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1};
+    for (size_t i = 0; i < out_degrees.size(); ++i) {
+        ASSERT_EQ(out_degrees[i], sdbg->outdegree(i));
+    }
+
+    // test BL
+    vector<uint8_t> BL{1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1};
+    for (size_t i = 0; i < BL.size(); ++i) {
+        ASSERT_EQ((bool) BL[i], sdbg->get_BL(i));
+    }
+
+    // test BF
+    vector<uint8_t> BF{0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1};
+    for (size_t i = 0; i < BF.size(); ++i) {
+        ASSERT_EQ((bool) BF[i], sdbg->get_BF(i));
+    }
+
+    // test CT
+    vector<bitset<MAXCOLORS>> CT{bitset<MAXCOLORS>("010"), bitset<MAXCOLORS>("001"), bitset<MAXCOLORS>("100"),
+                                 bitset<MAXCOLORS>("011"), bitset<MAXCOLORS>("110")};
+    vector<size_t> ncv{1, 1, 1, 2, 2};
+    for (size_t i = 0; i < CT.size(); ++i) {
+        bitset<MAXCOLORS> ac;
+        size_t num_of_colors = 0;
+        sdbg->update_color_class(i, ac, num_of_colors);
+        ASSERT_EQ(ac, CT[i]);
+        ASSERT_EQ(ncv[i], num_of_colors);
+    }
+
+    // get color classes
+    ASSERT_EQ(bitset<MAXCOLORS>(string(4, '1')), sdbg->get_color_class(0));
 }
 
 

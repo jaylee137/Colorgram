@@ -19,9 +19,10 @@ using namespace spp;
 class SuccinctDeBruijnGraph {
 public:
     SuccinctDeBruijnGraph(size_t pn, uint32_t pk, uint8_t ptype, const array<size_t, SIGMA>& pT,
-                          const bit_vector& pBL, const bit_vector& pBF,
+                          const bit_vector& pBL, const bit_vector& pBF, const uint8_t_vector_type& pedges_static,
                           const string& tmp_fname) : n(pn), k(pk), T(pT), BL(pBL), BF(pBF),
                                                      BL_rank(&BL), BL_select(&BL), BF_rank(&BF), BF_select(&BF),
+                                                     edges_static(pedges_static),
                                                      SBV(calculate_SBV(pBL, ptype)), SBV_rank(&SBV), SBV_select(&SBV),
                                                      label_vect_size(SBV_rank.rank(SBV.size())),
                                                      start_node_length((uint8_t)(BL_select.select(1) + 1)) {
@@ -31,9 +32,6 @@ public:
 
         // construct the edges wavelet tree
         construct(edges, tmp_fname, 1);
-
-        // construct the edges static vector for faster scanning purposes...
-        // construct_edges_static();
 
         // calculate T_F that stores the starting positions of the symbols in F
         calc_F_L_node_cnt();
@@ -54,6 +52,9 @@ public:
         SBV_select = sd_vector<>::select_1_type(&SBV);
         label_vect_size = SBV_rank.rank(SBV.size());
         start_node_length = (uint8_t) (BL_select.select(1) + 1);
+
+        // construct the edges static vector for faster scanning purposes...
+        construct_edges_static();
 
         calc_F_L_node_cnt();
     }
@@ -94,6 +95,10 @@ public:
 
     void set_C(uint32_t pC) { C = pC; }
 
+    uint32_t get_C() const { return C; }
+
+    uint32_t get_k() const { return k; }
+
     void set_X(sd_vector_builder *& vector_builder) {
         // X = select_support_mcl2(label_hash_vector, label_permutation, cids);
         X = sd_vector<>(*vector_builder);
@@ -110,7 +115,7 @@ public:
     void print_stats(ostream& out);
 
 private:
-    // void construct_edges_static();
+    void construct_edges_static();
 
     void calc_F_L_node_cnt();
 
@@ -150,9 +155,8 @@ private:
     sd_vector<>::select_1_type BF_select;
     array<size_t, SIGMA> L_node_cnt{};
     array<size_t, SIGMA> F_node_cnt{};
-    typedef wt_huff<rrr_vector<63>> wt_t;
+    typedef wt_huff<sd_vector<>> wt_t; //rrr_vector<63>
     wt_t edges;
-    typedef typename stxxl::VECTOR_GENERATOR<uint8_t>::result uint8_t_vector_type;
     uint8_t_vector_type edges_static;
     sd_vector<> SBV;
     sd_vector<>::rank_1_type SBV_rank;

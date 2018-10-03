@@ -253,7 +253,8 @@ void ColoredDeBrujinGraph<KMERBITS>::build_graph(const string& kmer_db_fname, co
     auto W = new stxxl::vector<uint8_t>(&tmp_edge_file);
     auto w_bufwriter = new stxxl::vector<uint8_t>::bufwriter_type(*W);
 
-
+    // create static vector for the edge tags
+    uint8_t_vector_type edges_static(kmers.size());
 
     // javitani - BF merete: BL merete - $$$X edgek szama...
     bit_vector BF(border_sum);
@@ -273,6 +274,7 @@ void ColoredDeBrujinGraph<KMERBITS>::build_graph(const string& kmer_db_fname, co
         auto ac = (uint8_t) (kmers[i] >> (LOGSIGMA * (k - 1)) & mask_last_char).to_ulong();
         // write the last char to the W vector (file)
         *w_bufwriter << ac;
+        edges_static[i] = ac;
         uint8_t aid = bits_to_id(ac) - 1;
         if (aid < SIGMA) {
             BF[char_indexes[aid]] = 1;
@@ -302,9 +304,10 @@ void ColoredDeBrujinGraph<KMERBITS>::build_graph(const string& kmer_db_fname, co
         pv += a;
     }
 
-    sdbg = new SuccinctDeBruijnGraph(kmers.size(), k, colorgram_type, T, BL, BF, tmp_fname);
+    sdbg = new SuccinctDeBruijnGraph(kmers.size(), k, colorgram_type, T, BL, BF, edges_static, tmp_fname);
     tmp_edge_file.close_remove();
     kmers.clear();
+    edges_static.clear();
 
     // reset the label vector
     label_hash_vector.resize(sdbg->get_label_vect_size());
@@ -453,7 +456,7 @@ void ColoredDeBrujinGraph<KMERBITS>::sort_color_table() {
 #endif
 
     // fill the label permutation vector
-    int_vector_type label_permutation(color_table.size());
+    size_t_vector_type label_permutation(color_table.size());
     for (size_t i = 0; i < indexes.size(); ++i) {
         label_permutation[indexes[i].second] = i;
     }

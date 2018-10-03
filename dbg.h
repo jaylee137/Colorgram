@@ -34,6 +34,8 @@ public:
         build_graph(pkmer_db_fname, pbegin_db_fname, pend_db_fname);
     }
 
+    ~ColoredDeBrujinGraph() { delete sdbg; }
+
     void build_colored_graph(uint32_t color, const string& dna_str);
 
     SuccinctDeBruijnGraph* get_sdbg() { return sdbg; }
@@ -76,8 +78,8 @@ private:
 
     typedef typename stxxl::VECTOR_GENERATOR<color_class_t>::result color_vector_type;
     color_vector_type color_table;
-    int_vector_type label_hash_vector;
-    int_vector_type gaps;
+    size_t_vector_type label_hash_vector;
+    size_t_vector_type gaps;
     hash<bitset<MAXCOLORS>> hash_color_class;
 
     size_t set_bits = 0;

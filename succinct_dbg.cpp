@@ -1,15 +1,15 @@
 #include "succinct_dbg.h"
 
 
-// void SuccinctDeBruijnGraph::construct_edges_static() {
-//     cerr << "Contruct Static Edges vector..." << endl;
-//     size_t index = 0;
-//     edges_static.resize(edges.size());
-//     for (auto it = edges.begin(); it != edges.end(); ++it, ++index) {
-//         edges_static[index] = *it;
-//     }
-//     cerr << "End of Static Edges vector..." << endl;
-// }
+void SuccinctDeBruijnGraph::construct_edges_static() {
+    cerr << "Contruct Static Edges vector..." << endl;
+    size_t index = 0;
+    edges_static.resize(edges.size());
+    for (auto it = edges.begin(); it != edges.end(); ++it, ++index) {
+        edges_static[index] = *it;
+    }
+    cerr << "End of Static Edges vector..." << endl;
+}
 
 
 void SuccinctDeBruijnGraph::calc_F_L_node_cnt() {
@@ -188,7 +188,7 @@ bitset<MAXCOLORS> SuccinctDeBruijnGraph::get_color_class(size_t index) {
             size_t _v = BL_rank.rank(edge_index);
             // if we hit the first node => the color class contain all the colors...
             if (_v == 0) {
-                return bitset<MAXCOLORS>().set();
+                return bitset<MAXCOLORS>(string(k, '1'));
             }
             size_t q = BF_select.select(_v);
             size_t r = (_v > 1) ? q - BF_select.select(_v - 1) : q + 1;
@@ -202,6 +202,10 @@ bitset<MAXCOLORS> SuccinctDeBruijnGraph::get_color_class(size_t index) {
 }
 
 
+/// Returns the next edge tagged by the given character
+/// \param index
+/// \param c - character, according to the bit order (not char type)
+/// \return the index of the next character
 size_t SuccinctDeBruijnGraph::get_next_symbol_index(size_t index, uint8_t c) const {
     // static wt_t::const_iterator start_it = edges.begin();
     // static uint8_t first_char = symbol_to_bits('A');
@@ -210,15 +214,19 @@ size_t SuccinctDeBruijnGraph::get_next_symbol_index(size_t index, uint8_t c) con
     // if (c == first_char) {
     //     return index;
     // }
-    return edges.select(edges.rank(index, c) + 1, c);
+    // return edges.select(edges.rank(index, c) + 1, c);
+    for (size_t i = index; i < edges.size(); ++i) {
+        if (edges_static[i] == c) {
+            return i;
+        }
+    }
+    // // in normal circumstances this could never happen...
     // for (size_t i = index; i < edges.size(); ++i) {
     //     if (edges[i] == c) {
     //         return i;
     //     }
     // }
-    //
-    // // in normal circumstances this could never happen...
-    // return edges.size();
+    return edges.size();
 
 }
 
@@ -468,12 +476,11 @@ void SuccinctDeBruijnGraph::print_stats(ostream& out) {
     //
     // store_to_file(Xrrr, "X");
 
-
-    bit_vector bv4(SBV.size());
-    for (size_t i = 0; i < SBV.size(); ++i) {
-        bv4[i] = SBV[i];
-    }
-    rrr_vector<127> SBVrrr(bv4);
-
-    store_to_file(SBVrrr, "SBV");
+    // bit_vector bv4(SBV.size());
+    // for (size_t i = 0; i < SBV.size(); ++i) {
+    //     bv4[i] = SBV[i];
+    // }
+    // rrr_vector<127> SBVrrr(bv4);
+    //
+    // store_to_file(SBVrrr, "SBV");
 }

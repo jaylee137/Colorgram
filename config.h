@@ -18,7 +18,8 @@ struct color_class_t {
     size_t cnt = 0;
 };
 
-typedef typename stxxl::VECTOR_GENERATOR<size_t>::result int_vector_type;
+typedef typename stxxl::VECTOR_GENERATOR<size_t>::result size_t_vector_type;
+typedef typename stxxl::VECTOR_GENERATOR<uint8_t>::result uint8_t_vector_type;
 
 
 #endif //COLORGRAM_CONFIG_H
