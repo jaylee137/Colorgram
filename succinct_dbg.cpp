@@ -232,7 +232,7 @@ size_t SuccinctDeBruijnGraph::get_next_symbol_index(size_t index, uint8_t c) con
 
 
 size_t SuccinctDeBruijnGraph::get_label_index(size_t index) const {
-    if (SBV[index] == 0) {
+    if (SBV[index] == 0) {                 // UPDATE using sparse_hash
         return label_vect_size;
     }
 

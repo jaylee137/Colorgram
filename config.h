@@ -6,6 +6,8 @@
 
 #define SIGMA       4u
 #define LOGSIGMA    3u
+// define the maximal size of the color table in bits that can fit in the memory
+#define MAX_COLOR_TABLE_SIZE    8ULL * 1024 * 1024 * 1024 * 50
 
 static const char base[SIGMA + 1] = {'$', 'A', 'C', 'G', 'T'};
 
