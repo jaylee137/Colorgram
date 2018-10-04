@@ -93,7 +93,7 @@ elif test "$#" -eq 4; then
     cd ../
 
     echo build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4
-    build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4
+    time build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4
 else
     # example usage: ./colorgra_tool -k=32 -m file_list.txt kmc-files-dir out-filename
     mkdir -p $3/
@@ -139,5 +139,5 @@ else
     cd ../
 
     echo build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4 -m
-    build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4 -m
+    time build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4 -m
 fi
