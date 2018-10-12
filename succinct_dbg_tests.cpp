@@ -105,7 +105,10 @@ TEST(DBGTest, DBG1) {
                                      bitset<MAXCOLORS>("101")};
     vector<size_t> color_class_ids{3, 2, 1, 0, 3, 2, 1, 3, 0, 1, 3, 0, 2, 1, 4, 3, 2, 1, 3, 0, 5, 6, 0, 1, 1};
     for (size_t i = 0; i < color_class_ids.size(); ++i) {
-        ASSERT_EQ(CT_all[color_class_ids[i]], sdbg->get_color_class(i));
+        bitset<MAXCOLORS> acc;
+        sdbg->get_color_class(acc, i);
+
+        ASSERT_EQ(CT_all[color_class_ids[i]], acc);
     }
 
     delete sdbg;
@@ -167,8 +170,10 @@ TEST(DBGTest, DBG2) {
         ASSERT_EQ(ncv[i], num_of_colors);
     }
 
+    bitset<MAXCOLORS> acc;
+    sdbg->get_color_class(acc, 0);
     // get color classes
-    ASSERT_EQ(bitset<MAXCOLORS>(string(4, '1')), sdbg->get_color_class(0));
+    ASSERT_EQ(bitset<MAXCOLORS>(string(3, '1')), acc);
 }
 
 

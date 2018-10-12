@@ -46,6 +46,8 @@ public:
         BF_select = sd_vector<>::select_1_type(&BF);
         X_select = sd_vector<>::select_1_type(&X);
         CT_select = sd_vector<>::select_1_type(&CT);
+        CT_rank = sd_vector<>::rank_1_type(&CT);
+        CT_last_set_bit_position = CT_select.select(CT_rank.rank(CT.size()));
 
         SBV = sd_vector<>(calculate_SBV());
         SBV_rank = sd_vector<>::rank_1_type(&SBV);
@@ -54,7 +56,7 @@ public:
         start_node_length = (uint8_t) (BL_select.select(1) + 1);
 
         // construct the edges static vector for faster scanning purposes...
-        construct_edges_static();
+        // construct_edges_static();
 
         calc_F_L_node_cnt();
     }
@@ -69,7 +71,7 @@ public:
 
     uint8_t get_start_node_length() const { return start_node_length; }
 
-    bitset<MAXCOLORS> get_color_class(size_t index);
+    tuple<size_t, size_t> get_color_class(bitset<MAXCOLORS>& color_class, size_t index);
 
     uint8_t get_edge(size_t index) const { return edges[index]; }
 
@@ -108,6 +110,8 @@ public:
     void set_CT(sd_vector_builder *& vector_builder) {
         CT = sd_vector<>(*vector_builder);
         CT_select = sd_vector<>::select_1_type(&CT);
+        CT_rank = sd_vector<>::rank_1_type(&CT);
+        CT_last_set_bit_position = CT_select.select(CT_rank.rank(CT.size()));
     }
 
     bool save(const string& output_fname) const;
@@ -145,6 +149,7 @@ private:
     size_t n;
     size_t v;
     uint32_t k;
+    size_t Ep1 = 0;
     array<size_t, SIGMA> T{};
     array<size_t, SIGMA> T_F{};
     sd_vector<> BL;
@@ -170,6 +175,8 @@ private:
     uint32_t C;
     sd_vector<> CT;
     sd_vector<>::select_1_type CT_select;
+    sd_vector<>::rank_1_type CT_rank;
+    size_t CT_last_set_bit_position;
 };
 
 

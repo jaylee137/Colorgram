@@ -1,4 +1,5 @@
 #include "succinct_dbg.h"
+#include <ctime>
 
 
 void SuccinctDeBruijnGraph::construct_edges_static() {
@@ -24,7 +25,6 @@ void SuccinctDeBruijnGraph::calc_F_L_node_cnt() {
 }
 
 
-
 bit_vector SuccinctDeBruijnGraph::calculate_SBV(const bit_vector& pBL, uint8_t ptype) {
     cerr << "Generating Storage Bit Vector (SBV)..." << endl;
     bit_vector rv(pBL.size());
@@ -38,6 +38,9 @@ bit_vector SuccinctDeBruijnGraph::calculate_SBV(const bit_vector& pBL, uint8_t p
             rv[i] = true;
             prev_zero = true;
         }
+        // else if (pBL[i] == 1 && indegree(i) > 1) {
+        //     rv[i] = true;
+        // }
         else if (ptype == 1 && edges[i] != 0 && indegree(forward(i, edges[i])) > 0) {
 
         }
@@ -64,6 +67,10 @@ bit_vector SuccinctDeBruijnGraph::calculate_SBV(uint8_t ptype) {
         else if (BL[i] == 0) {
             rv[i] = true;
             prev_zero = true;
+        }
+        else if (BL[i] == 1 && indegree(i) > 1) {
+            // rv[i] = true;
+            Ep1++;
         }
         else if (ptype == 1 && edges[i] != 0 && indegree(forward(i, edges[i])) > 0) {
 
@@ -98,7 +105,7 @@ uint8_t SuccinctDeBruijnGraph::indegree(size_t index) {
 /// \return out-degree
 uint8_t SuccinctDeBruijnGraph::outdegree(size_t index) {
     size_t r = BL_rank.rank(index);
-    return (r == 0) ? (uint8_t)(BL_select.select(1) + 1) : (uint8_t)(BL_select.select(r + 1) - BL_select.select(r));
+    return (r == 0) ? (uint8_t) (BL_select.select(1) + 1) : (uint8_t) (BL_select.select(r + 1) - BL_select.select(r));
 }
 
 
@@ -120,23 +127,40 @@ size_t SuccinctDeBruijnGraph::forward(size_t index, uint8_t c) const {
 /// \param color_class
 /// \param num_of_colors - increments each newly introduced color
 void SuccinctDeBruijnGraph::update_color_class(size_t index, bitset<MAXCOLORS>& color_class, size_t& num_of_colors) {
+    if (C > 100) {
+        // for bigger number of colors use select operations to navigate through the rows of the color table...
+        size_t start_index = index * C;
+        size_t i = CT_rank.rank(start_index) + 1;
+        index = CT_select.select(i);
+        for (size_t mc = start_index + C; index < mc; index = CT_select.select(++i)) {
+            if (!color_class[index - start_index]) {
+                ++num_of_colors;
+                color_class[index - start_index] = 1;
+            }
+            // if we hit the last set bit in CT => break (otherwise the last select operation would fail...)
+            if (index >= CT_last_set_bit_position) {
+                break;
+            }
+        }
+    }
+    else {
+        // for small number of colors => scan through the current line of the color table
+        for (size_t i = index * C, mc = (index + 1) * C, j = 0; i < mc; ++i, ++j) {
+            if (CT[i]) {
+                // if we introduce a new color to the color class => increment the number of used colors
+                if (!color_class[j]) {
+                    ++num_of_colors;
+                    color_class[j] = 1;
+                }
+            }
+        }
+    }
     // for (size_t i, ri = CT_rank.rank(index * C + 1), mc = (index + 1) * C;
     //      i < mc && i < CT.size() - 1; i = CT_select.select(++ri)) {
     //     CT.
     //     i = CT_select.select()
     //     color_class[i] = 1;
     // }
-
-    // for small number of colors => scan through the current line of the color table
-    for (size_t i = index * C, mc = (index + 1) * C, j = 0; i < mc; ++i, ++j) {
-        if (CT[i]) {
-            // if we introduce a new color to the color class => increment the number of used colors
-            if (!color_class[j]) {
-                ++num_of_colors;
-                color_class[j] = 1;
-            }
-        }
-    }
 }
 
 
@@ -158,29 +182,32 @@ inline size_t SuccinctDeBruijnGraph::backward(size_t index) {
 /// Returns the color class of the given edge
 /// \param index - edge index in W(G)
 /// \return color class
-bitset<MAXCOLORS> SuccinctDeBruijnGraph::get_color_class(size_t index) {
-    bitset<MAXCOLORS> color_class;
+tuple<size_t, size_t> SuccinctDeBruijnGraph::get_color_class(bitset<MAXCOLORS>& color_class, size_t index) {
+    // bitset<MAXCOLORS> color_class;
     // mark the visited nodes...
-    // sparse_hash_map<size_t, uint8_t> visited;
+    sparse_hash_map<size_t, uint8_t> visited;
     // size_t r = BL_rank.rank(index);
     // size_t startnode_index = (r == 0) ? 0 : BL_select.select(r) + 1;
     // the number of colors appearing in the current color class
     size_t num_of_colors = 0;
     stack<size_t> s;
     s.push(index);
+    visited[index] = 1;
+    size_t tree_size = 0, merge_cnt = 0;
     while (!s.empty()) {
         size_t edge_index = s.top();
+        ++tree_size;
         s.pop();
         // if the actual edge was saved
         if (SBV[edge_index] == 1) {
             // get the label index
             size_t xi = SBV_rank.rank(edge_index);
             // get the row index of the color table
-            size_t ci =  get_label(xi);
+            size_t ci = get_label(xi);
             update_color_class(ci, color_class, num_of_colors);
             // if all the colors appearing in the color class => return
             if (num_of_colors >= C) {
-                return color_class;
+                return {tree_size, merge_cnt};
             }
         }
         else {
@@ -188,17 +215,27 @@ bitset<MAXCOLORS> SuccinctDeBruijnGraph::get_color_class(size_t index) {
             size_t _v = BL_rank.rank(edge_index);
             // if we hit the first node => the color class contain all the colors...
             if (_v == 0) {
-                return bitset<MAXCOLORS>(string(k, '1'));
+                // color_class = bitset<MAXCOLORS>(string(C, '1'));
+                for (size_t i = 0; i < C; ++i) {
+                    color_class.set(i);
+                }
+                return {tree_size, merge_cnt};
             }
             size_t q = BF_select.select(_v);
             size_t r = (_v > 1) ? q - BF_select.select(_v - 1) : q + 1;
+            if (r > 1) {
+                ++merge_cnt;
+            }
             for (size_t _q = q - r + 1; _q <= q; ++_q) {
                 // step backward - push to the stack each incoming edges
-                s.push(backward(_q));
+                if (visited.find(_q) == visited.end()) {
+                    s.push(backward(_q));
+                    visited[_q] = 1;
+                }
             }
         }
     }
-    return color_class;
+    return {tree_size, merge_cnt};
 }
 
 
@@ -352,9 +389,9 @@ bool SuccinctDeBruijnGraph::save(const string& output_fname) const {
     if (!save_to_bin_file(output_fname + ".ct", [this](ostream& out) { save_color_table(out); }))
         return false;
 
-    cerr << "Saving Storage Vector..." << endl;
-    if (!save_to_bin_file(output_fname + ".sbv", [this](ostream& out) { save_storage_vect(out); }))
-        return false;
+    // cerr << "Saving Storage Vector..." << endl;
+    // if (!save_to_bin_file(output_fname + ".sbv", [this](ostream& out) { save_storage_vect(out); }))
+    //     return false;
 
     return true;
 }
@@ -407,7 +444,38 @@ void SuccinctDeBruijnGraph::print_stats(ostream& out) {
     out << "Size of CT in bytes:           " << size_in_bytes(CT) << endl;
     out << "Length of Label Vector:        " << label_vect_size << endl;
     out << "Size of Label Vector in bytes: " << size_in_bytes(X) << endl;
+    out << "# E_+^1:                       " << Ep1 << endl;
+    out << std::fixed;
+    out << "Ratio of 1s / (size of CT):    " << std::setprecision(6) << CT_rank.rank(CT.size()) / (double) CT.size()
+        << endl;
+    out << "AVG 1s in CT (row):            " << std::setprecision(6) << CT_rank.rank(CT.size()) / (double) CT.size() * C
+        << endl;
+    out << "AVG 1s in CT (column):         " << std::setprecision(6) << CT_rank.rank(CT.size()) / (double) C << endl;
     out << endl;
+
+    size_t experiment_cnt = 100000;
+    vector<bitset<MAXCOLORS>> color_classes(experiment_cnt);
+    cerr << "experiment started..." << endl;
+    size_t sum_tree_size = 0, sum_merge_cnt = 0;
+    using namespace std;
+    clock_t begin = clock();
+    for (size_t i = 0; i < experiment_cnt; ++i) {
+        size_t index = rand() % edges.size();
+        auto r = get_color_class(color_classes[i], index);
+        // cout << get<1>(r) << " " << get<2>(r) << endl;
+        sum_tree_size += get<0>(r);
+        sum_merge_cnt += get<1>(r);
+        if (i % 10000 == 0) {
+            out << i << " ";
+        }
+    }
+
+    clock_t end = clock();
+    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+    out << "Elapsed secs:                  " << elapsed_secs << endl;
+    out << "AVG time / get_color_class()   " << elapsed_secs / (double) experiment_cnt << endl;
+    out << "AVG tree size                  " << sum_tree_size / (double) experiment_cnt << endl;
+    out << "AVG merge cnt                  " << sum_merge_cnt / (double) experiment_cnt << endl;
 
     // for (size_t i = 0; i < CT.size() / C; ++i) {
     //     for (size_t j = 0; j < C; ++j) {

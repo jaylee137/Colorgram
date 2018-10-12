@@ -224,6 +224,8 @@ void ColoredDeBrujinGraph<KMERBITS>::build_graph(const string& kmer_db_fname, co
 
     kmer_data_base.Close();
 
+    cerr << "Number of edges: " << kmers.size() << endl;
+
     cerr << "Sorting kmers... " << endl;
 
     stxxl::sort(kmers.begin(), kmers.end(), compare_symbol_bit_vector<KMERBITS>(kmer_bits), 64 * 1024UL * 1024UL *
