@@ -116,7 +116,7 @@ TEST(DBGTest, DBG1) {
 
 
 TEST(DBGTest, DBG2) {
-    DBGWrapper *dbg = build_graph(4, 0, "../tests/test_kmers_all.txt", "../tests/edges2/kmers", "../tests/edges2/begin",
+    DBGWrapper *dbg = build_graph(4, 0, "../tests/test_kmers_all.fna", "../tests/edges2/kmers", "../tests/edges2/begin",
                                   "../tests/edges2/end", "", true, false);
     auto sdbg = dbg->get_sdbg();
 
