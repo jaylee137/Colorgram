@@ -3,7 +3,7 @@
 if test "$#" -lt 4; then
     echo "Too few arguments were given..."
 elif test "$#" -eq 4; then
-    # example usage: ./colorgra_tool -k=32 file_list.txt kmc-files-dir out-filename
+    # example usage: ./colorgra_tool.sh -k=32 file_list.txt kmc-files-dir out-filename
 
     mkdir -p $3/
     rm $3/*kmc_pre
@@ -95,7 +95,7 @@ elif test "$#" -eq 4; then
     echo build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4
     time build/colorgram-build $K 0 $2 $3/kmers $3/begin $3/end $4
 else
-    # example usage: ./colorgra_tool -k=32 -m file_list.txt kmc-files-dir out-filename
+    # example usage: ./colorgra_tool.sh -k=32 file_list.txt kmc-files-dir out-filename -m
     mkdir -p $3/
     rm $3/*kmc_pre
     rm $3/*kmc_suf
