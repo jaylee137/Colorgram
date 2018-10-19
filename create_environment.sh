@@ -20,7 +20,7 @@ cd ../../
 
 
 # SDSL
-git clone https://github.com/cosmo-team/sdsl-lite.git
+git clone https://github.com/simongog/sdsl-lite.git
 cd sdsl-lite/
 /usr/bin/time sh install.sh install
 cd ../
