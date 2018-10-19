@@ -79,7 +79,7 @@ public:
         return (index == 0) ? X_select.select(index + 1) : X_select.select(index + 1) - X_select.select(index) - 1;
     }
 
-    void update_color_class(size_t index, bitset<MAXCOLORS>& color_class, size_t& num_of_colors);
+    size_t update_color_class(size_t index, bitset<MAXCOLORS>& color_class, size_t& num_of_colors);
 
     bool get_BL(size_t index) { return (bool)BL[index]; }
 
@@ -160,7 +160,7 @@ private:
     sd_vector<>::select_1_type BF_select;
     array<size_t, SIGMA> L_node_cnt{};
     array<size_t, SIGMA> F_node_cnt{};
-    typedef wt_huff<sd_vector<>> wt_t; //rrr_vector<63>
+    typedef wt_gmr_rs<> wt_t; //rrr_vector<63>  sd_vector<>
     wt_t edges;
     uint8_t_vector_type edges_static;
     sd_vector<> SBV;
