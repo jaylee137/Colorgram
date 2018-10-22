@@ -35,7 +35,7 @@ TEST(DBGTest, DBG1) {
     ASSERT_EQ(3, sdbg->get_C());
     ASSERT_EQ(4, sdbg->get_k());
     ASSERT_EQ(10, sdbg->get_label_vect_size());
-    ASSERT_GE(MAXCOLORS, 4);
+    ASSERT_GE(MAXCOLORS, 3);
 
     // test edge list
     string edge_lst = "CGGTTCTTCCGATA$AAAAACCGTA";
@@ -126,7 +126,7 @@ TEST(DBGTest, DBG2) {
     ASSERT_EQ(3, sdbg->get_C());
     ASSERT_EQ(4, sdbg->get_k());
     ASSERT_EQ(10, sdbg->get_label_vect_size());
-    ASSERT_GE(MAXCOLORS, 4);
+    ASSERT_GE(MAXCOLORS, 3);
 
     // test edge list
     string edge_lst = "CGTGC$CGTAAT$CCAAGTACATAACC";
