@@ -129,7 +129,7 @@ private:
     };
 
     color_vector_class color_table;
-    size_t_vector_type label_hash_vector;
+    vector<size_t> label_hash_vector;
     size_t_vector_type gaps;
     hash<bitset<MAXCOLORS>> hash_color_class;
 
