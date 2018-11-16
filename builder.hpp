@@ -23,55 +23,96 @@ void create_color_information(DBGWrapper *& dbg, const string& kmer_list_fname) 
     }
     kmer_lst_file.close();
 
-    // add colors for the dbg
-    for (uint32_t i = 0; i < (uint32_t) fnames.size(); ++i) {
-        ifstream f(fnames[i]);
-        cerr << i << " ";
+    auto build = [&fnames](auto fn) {
+        // add colors for the dbg
+        for (size_t i = 0; i < fnames.size(); ++i) {
+            ifstream f(fnames[i]);
+            cerr << i << " ";
+            sparse_hash_map<uint64_t, uint64_t> H;
+            sparse_hash_map<uint64_t, uint8_t> visited;
+            if (f.is_open()) {
+                string line;
+                // the first line is just a header...
+                while (getline(f, line)) {
+                    // the second line contains the actual (flatten) DNA data
+                    getline(f, line);
+
+                    fn(i, line, H, visited);
+                }
+
+                f.close();
+            }
+            else {
+                cerr << "Unable to open file '" << fnames[i] << "'" << endl;
+                exit(1);
+            }
+        }
+    };
+
+    // first build the label vector
+    build([&dbg](size_t i, const string& line, sparse_hash_map<uint64_t, uint64_t>& H,
+                 sparse_hash_map<uint64_t, uint8_t>& visited) { dbg->build_label_vector(i, line, H, visited); });
+
+    // then sort it, create the proper labels
+    dbg->sort_label_vector();
+
+    // then create color table
+    build([&dbg](size_t i, const string& line, sparse_hash_map<uint64_t, uint64_t>& H,
+                 sparse_hash_map<uint64_t, uint8_t>& visited) { dbg->build_color_table(i, line); });
+
+    dbg->print_stats();
+
+    // create the succinct label vector and color table
+    dbg->create_succinct_structures();
+}
+
+void create_color_information_single_file_mode(DBGWrapper *& dbg, const string& fname) {
+    auto build = [&fname](auto fn) {
+        ifstream f(fname);
+
         if (f.is_open()) {
             string line;
+            size_t i = 0;
             // the first line is just a header...
             while (getline(f, line)) {
+                cerr << i << " ";
                 // the second line contains the actual (flatten) DNA data
                 getline(f, line);
 
-                dbg->build_colored_graph(i, line);
+                sparse_hash_map<uint64_t, uint64_t> H;
+                sparse_hash_map<uint64_t, uint8_t> visited;
+
+                fn(i++, line, H, visited); //dbg->build_label_vector(i++, line);
             }
 
             f.close();
         }
         else {
-            cerr << "Unable to open file '" << fnames[i] << "'" << endl;
+            cerr << "Unable to open file '" << fname << "'" << endl;
             exit(1);
         }
-    }
-}
+    };
 
-void create_color_information_single_file_mode(DBGWrapper *& dbg, const string& fname) {
-    ifstream f(fname);
+    // first build the label vector
+    build([&dbg](size_t i, const string& line, sparse_hash_map<uint64_t, uint64_t>& H,
+                 sparse_hash_map<uint64_t, uint8_t>& visited) { dbg->build_label_vector(i, line, H, visited); });
 
-    if (f.is_open()) {
-        string line;
-        size_t i = 0;
-        // the first line is just a header...
-        while (getline(f, line)) {
-            cerr << i << " ";
-            // the second line contains the actual (flatten) DNA data
-            getline(f, line);
+    // then sort it, create the proper labels
+    dbg->sort_label_vector();
 
-            dbg->build_colored_graph(i++, line);
-        }
+    // then create color table
+    build([&dbg](size_t i, const string& line, sparse_hash_map<uint64_t, uint64_t>& H,
+                 sparse_hash_map<uint64_t, uint8_t>& visited) { dbg->build_color_table(i, line); });
 
-        f.close();
-    }
-    else {
-        cerr << "Unable to open file '" << fname << "'" << endl;
-        exit(1);
-    }
+    dbg->print_stats();
+
+    // create the succinct label vector and color table
+    dbg->create_succinct_structures();
 }
 
 DBGWrapper *build_graph(uint32_t k, uint8_t cologram_type, const string& kmer_list_fname, const string& kmer_db_fname,
                         const string& begin_db_fname, const string& end_db_fname, const string& out_db_fname,
-                        bool single_mode, bool save_db = true) {
+                        bool single_mode) {
     // check that the kmer list file exists
     if (!file_exists(kmer_list_fname)) {
         cerr << "Unable to open file '" << kmer_list_fname << "'" << endl;
@@ -79,7 +120,7 @@ DBGWrapper *build_graph(uint32_t k, uint8_t cologram_type, const string& kmer_li
     }
 
     // create the de Bruijn graph
-    auto dbg = new DBGWrapper(k, cologram_type, kmer_db_fname, begin_db_fname, end_db_fname);
+    auto dbg = new DBGWrapper(k, cologram_type, kmer_db_fname, begin_db_fname, end_db_fname, out_db_fname);
 
     cerr << "Creating color information..." << endl;
     if (single_mode) {
@@ -90,14 +131,8 @@ DBGWrapper *build_graph(uint32_t k, uint8_t cologram_type, const string& kmer_li
     }
     cerr << endl;
 
-    dbg->print_stats();
-
-    dbg->sort_color_table();
-
-    if (save_db) {
-        // save the graph: out_db_fname.dbg, out_db_fname.ct, out_db_fname.x
-        dbg->save_graph(out_db_fname);
-    }
+    // save the graph: out_db_fname.dbg, out_db_fname.ct, out_db_fname.x
+    dbg->save_graph();
 
     return dbg;
 }

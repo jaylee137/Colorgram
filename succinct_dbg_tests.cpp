@@ -26,7 +26,7 @@ void test_str_forward(SuccinctDeBruijnGraph *sdbg, string str, vector<size_t> fv
 
 TEST(DBGTest, DBG1) {
     DBGWrapper *dbg = build_graph(4, 0, "../tests/test_lst.txt", "../tests/edges/kmers", "../tests/edges/begin",
-                                  "../tests/edges/end", "", false, false);
+                                  "../tests/edges/end", "", false);
     auto sdbg = dbg->get_sdbg();
 
     ASSERT_EQ(25, sdbg->get_num_of_edges());
@@ -76,7 +76,7 @@ TEST(DBGTest, DBG1) {
     }
 
     // test label vector
-    vector<size_t> label_vect{3, 2, 1, 0, 0, 2, 4, 3, 0, 1};
+    vector<size_t> label_vect{2, 3, 1, 0, 0, 3, 4, 2, 0, 1};
     for (size_t i = 0; i < label_vect.size(); ++i) {
         ASSERT_EQ(label_vect[i], sdbg->get_label(i));
     }
@@ -88,9 +88,9 @@ TEST(DBGTest, DBG1) {
     }
 
     // test CT
-    vector<bitset<MAXCOLORS>> CT{bitset<MAXCOLORS>("010"), bitset<MAXCOLORS>("001"), bitset<MAXCOLORS>("011"),
-                                 bitset<MAXCOLORS>("100"), bitset<MAXCOLORS>("111")};
-    vector<size_t> ncv{1, 1, 2, 1, 3};
+    vector<bitset<MAXCOLORS>> CT{bitset<MAXCOLORS>("010"), bitset<MAXCOLORS>("001"), bitset<MAXCOLORS>("100"),
+                                 bitset<MAXCOLORS>("011"), bitset<MAXCOLORS>("111")};
+    vector<size_t> ncv{1, 1, 1, 2, 3};
     for (size_t i = 0; i < CT.size(); ++i) {
         bitset<MAXCOLORS> ac;
         size_t num_of_colors = 0;
@@ -117,7 +117,7 @@ TEST(DBGTest, DBG1) {
 
 TEST(DBGTest, DBG2) {
     DBGWrapper *dbg = build_graph(4, 0, "../tests/test_kmers_all.fna", "../tests/edges2/kmers", "../tests/edges2/begin",
-                                  "../tests/edges2/end", "", true, false);
+                                  "../tests/edges2/end", "", true);
     auto sdbg = dbg->get_sdbg();
 
     ASSERT_EQ(27, sdbg->get_num_of_edges());
@@ -159,9 +159,9 @@ TEST(DBGTest, DBG2) {
     }
 
     // test CT
-    vector<bitset<MAXCOLORS>> CT{bitset<MAXCOLORS>("010"), bitset<MAXCOLORS>("001"), bitset<MAXCOLORS>("100"),
-                                 bitset<MAXCOLORS>("011"), bitset<MAXCOLORS>("110")};
-    vector<size_t> ncv{1, 1, 1, 2, 2};
+    vector<bitset<MAXCOLORS>> CT{bitset<MAXCOLORS>("010"), bitset<MAXCOLORS>("100"), bitset<MAXCOLORS>("001"),
+                                 bitset<MAXCOLORS>("110"), bitset<MAXCOLORS>("101"), bitset<MAXCOLORS>("011")};
+    vector<size_t> ncv{1, 1, 1, 2, 2, 2};
     for (size_t i = 0; i < CT.size(); ++i) {
         bitset<MAXCOLORS> ac;
         size_t num_of_colors = 0;

@@ -24,9 +24,9 @@ template<uint16_t KMERBITS>
 class ColoredDeBrujinGraph {
 public:
     ColoredDeBrujinGraph(uint32_t pk, uint8_t pcologram_type, const string& pkmer_db_fname,
-                         const string& pbegin_db_fname,
-                         const string& pend_db_fname) : k(pk), kmer_bits(LOGSIGMA * pk),
-                                                        colorgram_type(pcologram_type) {
+                         const string& pbegin_db_fname, const string& pend_db_fname,
+                         const string& pout_fname) : k(pk), kmer_bits(LOGSIGMA * pk), colorgram_type(pcologram_type),
+                                                     out_fname(pout_fname) {
         for (uint8_t i = 0; i < SIGMA + 1; ++i) {
             bitset<KMERBITS> sid = symbol_to_bits(base[i]);
             sid <<= kmer_bits - LOGSIGMA;
@@ -38,15 +38,20 @@ public:
 
     ~ColoredDeBrujinGraph() { delete sdbg; }
 
-    void build_colored_graph(uint32_t color, const string& dna_str);
+    void build_label_vector(size_t color, const string& dna_str, sparse_hash_map<uint64_t, uint64_t>& H,
+                            sparse_hash_map<uint64_t, uint8_t>& visited);
+
+    void sort_label_vector();
+
+    void build_color_table(size_t color, const string& dna_str);
 
     SuccinctDeBruijnGraph *get_sdbg() { return sdbg; }
 
     void print_stats();
 
-    void sort_color_table();
+    void create_succinct_structures();
 
-    bool save_graph(const string& output_fname);
+    bool save_graph();
 
 private:
     void build_graph(const string& kmer_db_fname, const string& begin_db_fname, const string& end_db_fname);
@@ -57,9 +62,9 @@ private:
 
     string kmer_to_str(bitset<KMERBITS> kmer_str, uint32_t k);
 
-    inline void add_color(size_t& kmer_color_hash, size_t color);
+    inline void add_color(size_t color, size_t r);
 
-    inline size_t add_color_class(const bitset<MAXCOLORS>& bitvector);
+    // inline size_t add_color_class(const bitset<MAXCOLORS>& bitvector);
 
     inline size_t gen_next_hash_id(size_t hashv) const {
         // mt19937_64 rand_rng(hashv);
@@ -67,73 +72,32 @@ private:
         return hashv + 1;
     }
 
+    void save_multiplicities(const vector<vector<size_t>>& buckets);
+
     array<bitset<KMERBITS>, SIGMA + 1> shifted_sids;
 
     uint32_t k;
-    uint32_t C = 0;
+    size_t C = 0;
     uint32_t kmer_bits;
     uint32_t colorgram_type;
+    string out_fname;
 
     SuccinctDeBruijnGraph *sdbg = nullptr;
 
-    sparse_hash_map<uint64_t, uint64_t> cids;
+    // the first element of the pair stores the label and the second the number of set bits
+    // typedef typename stxxl::VECTOR_GENERATOR<pair<size_t, size_t>>::result label_vector_type;
+    vector<pair<size_t, size_t>> X; // label_vector_type
+    size_t max_label = 0;
+    size_t label_vector_length = 0;
 
-    typedef typename stxxl::VECTOR_GENERATOR<color_class_t>::result color_vector_type;
-
-    class color_vector_class {
-    public:
-
-        inline void push_back(const color_class_t& cc) {
-            if (store_to_memory) {
-                if (color_table_memory.size() * MAXCOLORS < MAX_COLOR_TABLE_SIZE) {
-                    color_table_memory.push_back(cc);
-                }
-                else {
-                    cerr << "Save color table to storage..." << endl;
-                    // reserve external memory
-                    color_table_storage.reserve(color_table_memory.size());
-                    for (auto c : color_table_memory) {
-                        color_table_storage.push_back(c);
-                    }
-                    color_table_memory.clear();
-                    store_to_memory = false;
-
-                    // add the new element as well
-                    color_table_storage.push_back(cc);
-                }
-            }
-            else {
-                // if we have reached the capacity => reserve more external space
-                if (color_table_storage.size() >= color_table_storage.capacity() - 10) {
-                    // raise the external space by 1GB
-                    color_table_storage.reserve(color_table_storage.size() + 8ULL * 1024 * 1024 * 1024 / MAXCOLORS);
-                }
-                color_table_storage.push_back(cc);
-            }
-        }
-
-        inline size_t size() const { return store_to_memory ? color_table_memory.size() : color_table_storage.size(); }
-
-        const color_class_t& operator[](size_t offset) const {
-            return store_to_memory ? color_table_memory[offset] : color_table_storage[offset];
-        }
-
-        color_class_t& operator[](size_t offset) {
-            return store_to_memory ? color_table_memory[offset] : color_table_storage[offset];
-        }
-
-    private:
-        vector<color_class_t> color_table_memory;
-        color_vector_type color_table_storage;
-        bool store_to_memory = true;
-    };
-
-    color_vector_class color_table;
-    vector<size_t> label_hash_vector;
-    size_t_vector_type gaps;
-    hash<bitset<MAXCOLORS>> hash_color_class;
-
-    size_t set_bits = 0;
+    // color_vector_class color_table;
+    vector<sd_vector_builder *> color_table;
+    vector<sd_vector<> *> color_table_succinct;
+    vector<size_t> color_table_row_capacities;
+    size_t color_table_set_bits = 0;
+    // vector<size_t> label_hash_vector;
+    // size_t_vector_type gaps;
+    // hash<bitset<MAXCOLORS>> hash_color_class;
 };
 
 

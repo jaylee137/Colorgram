@@ -13,21 +13,26 @@
 class DBGWrapper {
 public:
     DBGWrapper(uint32_t pk, uint8_t pcologram_type, const string& pkmer_db_fname, const string& pbegin_db_fname,
-               const string& pend_db_fname) : k(pk) {
+               const string& pend_db_fname, const string& pout_fname) : k(pk) {
         if (k <= KMER8BYTES) {
-            dbg8 = new ColoredDeBrujinGraph<64>(pk, pcologram_type, pkmer_db_fname, pbegin_db_fname, pend_db_fname);
+            dbg8 = new ColoredDeBrujinGraph<64>(pk, pcologram_type, pkmer_db_fname, pbegin_db_fname, pend_db_fname,
+                                                pout_fname);
         }
         else if (k <= KMER16BYTES) {
-            dbg16 = new ColoredDeBrujinGraph<128>(pk, pcologram_type, pkmer_db_fname, pbegin_db_fname, pend_db_fname);
+            dbg16 = new ColoredDeBrujinGraph<128>(pk, pcologram_type, pkmer_db_fname, pbegin_db_fname, pend_db_fname,
+                                                  pout_fname);
         }
         else if (k <= KMER24BYTES) {
-            dbg24 = new ColoredDeBrujinGraph<192>(pk, pcologram_type, pkmer_db_fname, pbegin_db_fname, pend_db_fname);
+            dbg24 = new ColoredDeBrujinGraph<192>(pk, pcologram_type, pkmer_db_fname, pbegin_db_fname, pend_db_fname,
+                                                  pout_fname);
         }
         else if (k <= KMER32BYTES) {
-            dbg32 = new ColoredDeBrujinGraph<256>(pk, pcologram_type, pkmer_db_fname, pbegin_db_fname, pend_db_fname);
+            dbg32 = new ColoredDeBrujinGraph<256>(pk, pcologram_type, pkmer_db_fname, pbegin_db_fname, pend_db_fname,
+                                                  pout_fname);
         }
         else if (k <= KMER40BYTES) {
-            dbg40 = new ColoredDeBrujinGraph<320>(pk, pcologram_type, pkmer_db_fname, pbegin_db_fname, pend_db_fname);
+            dbg40 = new ColoredDeBrujinGraph<320>(pk, pcologram_type, pkmer_db_fname, pbegin_db_fname, pend_db_fname,
+                                                  pout_fname);
         }
         else {
             cerr << "Maximal k-mer size is " << KMER40BYTES << "..." << endl;
@@ -42,25 +47,62 @@ public:
         delete dbg40;
     }
 
-    void build_colored_graph(size_t color, const string& dna_str) {
+    void build_label_vector(size_t color, const string& dna_str, sparse_hash_map<uint64_t, uint64_t>& H,
+                            sparse_hash_map<uint64_t, uint8_t>& visited) {
         if (k <= KMER8BYTES) {
-            dbg8->build_colored_graph(color, dna_str);
+            dbg8->build_label_vector(color, dna_str, H, visited);
         }
         else if (k <= KMER16BYTES) {
-            dbg16->build_colored_graph(color, dna_str);
+            dbg16->build_label_vector(color, dna_str, H, visited);
         }
         else if (k <= KMER24BYTES) {
-            dbg24->build_colored_graph(color, dna_str);
+            dbg24->build_label_vector(color, dna_str, H, visited);
         }
         else if (k <= KMER32BYTES) {
-            dbg32->build_colored_graph(color, dna_str);
+            dbg32->build_label_vector(color, dna_str, H, visited);
         }
         else if (k <= KMER40BYTES) {
-            dbg40->build_colored_graph(color, dna_str);
+            dbg40->build_label_vector(color, dna_str, H, visited);
         }
     }
 
-    SuccinctDeBruijnGraph* get_sdbg() {
+    void sort_label_vector() {
+        if (k <= KMER8BYTES) {
+            dbg8->sort_label_vector();
+        }
+        else if (k <= KMER16BYTES) {
+            dbg16->sort_label_vector();
+        }
+        else if (k <= KMER24BYTES) {
+            dbg24->sort_label_vector();
+        }
+        else if (k <= KMER32BYTES) {
+            dbg32->sort_label_vector();
+        }
+        else if (k <= KMER40BYTES) {
+            dbg40->sort_label_vector();
+        }
+    }
+
+    void build_color_table(size_t color, const string& dna_str) {
+        if (k <= KMER8BYTES) {
+            dbg8->build_color_table(color, dna_str);
+        }
+        else if (k <= KMER16BYTES) {
+            dbg16->build_color_table(color, dna_str);
+        }
+        else if (k <= KMER24BYTES) {
+            dbg24->build_color_table(color, dna_str);
+        }
+        else if (k <= KMER32BYTES) {
+            dbg32->build_color_table(color, dna_str);
+        }
+        else if (k <= KMER40BYTES) {
+            dbg40->build_color_table(color, dna_str);
+        }
+    }
+
+    SuccinctDeBruijnGraph *get_sdbg() {
         if (k <= KMER8BYTES) {
             return dbg8->get_sdbg();
         }
@@ -98,39 +140,39 @@ public:
         }
     }
 
-    void sort_color_table() {
+    void create_succinct_structures() {
         if (k <= KMER8BYTES) {
-            dbg8->sort_color_table();
+            dbg8->create_succinct_structures();
         }
         else if (k <= KMER16BYTES) {
-            dbg16->sort_color_table();
+            dbg16->create_succinct_structures();
         }
         else if (k <= KMER24BYTES) {
-            dbg24->sort_color_table();
+            dbg24->create_succinct_structures();
         }
         else if (k <= KMER32BYTES) {
-            dbg32->sort_color_table();
+            dbg32->create_succinct_structures();
         }
         else if (k <= KMER40BYTES) {
-            dbg40->sort_color_table();
+            dbg40->create_succinct_structures();
         }
     }
 
-    bool save_graph(const string& poutput_fname) {
+    bool save_graph() {
         if (k <= KMER8BYTES) {
-            return dbg8->save_graph(poutput_fname);
+            return dbg8->save_graph();
         }
         else if (k <= KMER16BYTES) {
-            return dbg16->save_graph(poutput_fname);
+            return dbg16->save_graph();
         }
         else if (k <= KMER24BYTES) {
-            return dbg24->save_graph(poutput_fname);
+            return dbg24->save_graph();
         }
         else if (k <= KMER32BYTES) {
-            return dbg32->save_graph(poutput_fname);
+            return dbg32->save_graph();
         }
         else if (k <= KMER40BYTES) {
-            return dbg40->save_graph(poutput_fname);
+            return dbg40->save_graph();
         }
 
         return false;

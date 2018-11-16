@@ -19,46 +19,44 @@ using namespace spp;
 class SuccinctDeBruijnGraph {
 public:
     SuccinctDeBruijnGraph(size_t pn, uint32_t pk, uint8_t ptype, const array<size_t, SIGMA>& pT,
-                          const bit_vector& pBL, const bit_vector& pBF, const uint8_t_vector_type& pedges_static,
+                          const bit_vector& pBL, const bit_vector& pBF,
                           const string& tmp_fname) : n(pn), k(pk), T(pT), BL(pBL), BF(pBF),
                                                      BL_rank(&BL), BL_select(&BL), BF_rank(&BF), BF_select(&BF),
-                                                     edges_static(pedges_static),
-                                                     SBV(calculate_SBV(pBL, ptype)), SBV_rank(&SBV), SBV_select(&SBV),
-                                                     label_vect_size(SBV_rank.rank(SBV.size())),
-                                                     start_node_length((uint8_t)(BL_select.select(1) + 1)) {
+                                                     start_node_length((uint8_t) (BL_select.select(1) + 1)) {
 
-        // number of nodes
         v = BL_rank.rank(BL.size());
-
         // construct the edges wavelet tree
         construct(edges, tmp_fname, 1);
 
         // calculate T_F that stores the starting positions of the symbols in F
         calc_F_L_node_cnt();
+
+        SBV = sd_vector<>(calculate_SBV(pBL, ptype));
+        SBV_rank = sd_vector<>::rank_1_type(&SBV);
+        label_vect_size = SBV_rank.rank(SBV.size());
     }
 
     SuccinctDeBruijnGraph(const string& input_fname) {
         load(input_fname);
 
+
         BL_rank = sd_vector<>::rank_1_type(&BL);
         BL_select = sd_vector<>::select_1_type(&BL);
         BF_rank = sd_vector<>::rank_1_type(&BF);
         BF_select = sd_vector<>::select_1_type(&BF);
+        // construct the edges static vector for faster scanning purposes...
+        // construct_edges_static();
+        calc_F_L_node_cnt();
+
         X_select = sd_vector<>::select_1_type(&X);
         CT_select = sd_vector<>::select_1_type(&CT);
         CT_rank = sd_vector<>::rank_1_type(&CT);
         CT_last_set_bit_position = CT_select.select(CT_rank.rank(CT.size()));
 
-        SBV = sd_vector<>(calculate_SBV());
+        // SBV = sd_vector<>(calculate_SBV());
         SBV_rank = sd_vector<>::rank_1_type(&SBV);
-        SBV_select = sd_vector<>::select_1_type(&SBV);
         label_vect_size = SBV_rank.rank(SBV.size());
         start_node_length = (uint8_t) (BL_select.select(1) + 1);
-
-        // construct the edges static vector for faster scanning purposes...
-        // construct_edges_static();
-
-        calc_F_L_node_cnt();
     }
 
     uint8_t indegree(size_t index);
@@ -71,7 +69,7 @@ public:
 
     uint8_t get_start_node_length() const { return start_node_length; }
 
-    tuple<size_t, size_t> get_color_class(bitset<MAXCOLORS>& color_class, size_t index);
+    tuple<size_t, size_t, size_t> get_color_class(bitset<MAXCOLORS>& color_class, size_t index);
 
     uint8_t get_edge(size_t index) const { return edges[index]; }
 
@@ -81,9 +79,9 @@ public:
 
     size_t update_color_class(size_t index, bitset<MAXCOLORS>& color_class, size_t& num_of_colors);
 
-    bool get_BL(size_t index) { return (bool)BL[index]; }
+    bool get_BL(size_t index) { return (bool) BL[index]; }
 
-    bool get_BF(size_t index) { return (bool)BF[index]; }
+    bool get_BF(size_t index) { return (bool) BF[index]; }
 
     size_t get_next_symbol_index(size_t index, uint8_t c) const;
 
@@ -119,7 +117,6 @@ public:
     void print_stats(ostream& out);
 
 private:
-    void construct_edges_static();
 
     void calc_F_L_node_cnt();
 
@@ -146,37 +143,35 @@ private:
     bool load(const string& input_fname);
 
 
-    size_t n;
-    size_t v;
-    uint32_t k;
-    size_t Ep1 = 0;
+    size_t n{};
+    uint32_t k{};
+    size_t Ep1{};
     array<size_t, SIGMA> T{};
     array<size_t, SIGMA> T_F{};
-    sd_vector<> BL;
-    sd_vector<> BF;
-    sd_vector<>::rank_1_type BL_rank;
-    sd_vector<>::select_1_type BL_select;
-    sd_vector<>::rank_1_type BF_rank;
-    sd_vector<>::select_1_type BF_select;
+    sd_vector<> BL{};
+    sd_vector<> BF{};
+    sd_vector<>::rank_1_type BL_rank{};
+    sd_vector<>::select_1_type BL_select{};
+    sd_vector<>::rank_1_type BF_rank{};
+    sd_vector<>::select_1_type BF_select{};
     array<size_t, SIGMA> L_node_cnt{};
     array<size_t, SIGMA> F_node_cnt{};
-    typedef wt_gmr_rs<> wt_t; //rrr_vector<63>  sd_vector<>
-    wt_t edges;
-    uint8_t_vector_type edges_static;
-    sd_vector<> SBV;
-    sd_vector<>::rank_1_type SBV_rank;
-    sd_vector<>::select_1_type SBV_select;
-    size_t label_vect_size;
-    uint8_t start_node_length;
+    typedef wt_gmr_rs<> wt_t; //wt_huff<rrr_vector<63>>  wt_huff<sd_vector<>> wt_gmr_rs<>
+    wt_t edges{};
+    // uint8_t_vector_type edges_static{};
+    sd_vector<> SBV{};
+    sd_vector<>::rank_1_type SBV_rank{};
+    size_t label_vect_size{};
+    uint8_t start_node_length{};
+    size_t v{};
 
-
-    sd_vector<> X;
-    sd_vector<>::select_1_type X_select;
-    uint32_t C;
-    sd_vector<> CT;
-    sd_vector<>::select_1_type CT_select;
-    sd_vector<>::rank_1_type CT_rank;
-    size_t CT_last_set_bit_position;
+    sd_vector<> X{};
+    sd_vector<>::select_1_type X_select{};
+    uint32_t C{};
+    sd_vector<> CT{};
+    sd_vector<>::select_1_type CT_select{};
+    sd_vector<>::rank_1_type CT_rank{};
+    size_t CT_last_set_bit_position{};
 };
 
 
