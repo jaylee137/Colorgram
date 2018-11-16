@@ -93,9 +93,9 @@ public:
 
     size_t get_num_of_nodes() const { return v; }
 
-    void set_C(uint32_t pC) { C = pC; }
+    void set_C(size_t pC) { C = pC; }
 
-    uint32_t get_C() const { return C; }
+    size_t get_C() const { return C; }
 
     uint32_t get_k() const { return k; }
 
@@ -167,7 +167,7 @@ private:
 
     sd_vector<> X{};
     sd_vector<>::select_1_type X_select{};
-    uint32_t C{};
+    size_t C{};
     sd_vector<> CT{};
     sd_vector<>::select_1_type CT_select{};
     sd_vector<>::rank_1_type CT_rank{};
