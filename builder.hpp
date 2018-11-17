@@ -27,7 +27,9 @@ void create_color_information(DBGWrapper *& dbg, const string& kmer_list_fname) 
         // add colors for the dbg
         for (size_t i = 0; i < fnames.size(); ++i) {
             ifstream f(fnames[i]);
-            cerr << i << " ";
+            if (fnames.size() < 1000000 || i % 1000000 == 0) {
+                cerr << i << " ";
+            }
             sparse_hash_map<uint64_t, uint64_t> H;
             sparse_hash_map<uint64_t, uint8_t> visited;
             if (f.is_open()) {
@@ -75,7 +77,9 @@ void create_color_information_single_file_mode(DBGWrapper *& dbg, const string& 
             size_t i = 0;
             // the first line is just a header...
             while (getline(f, line)) {
-                cerr << i << " ";
+                if (i < 1000000 || i % 1000000 == 0) {
+                    cerr << i << " ";
+                }
                 // the second line contains the actual (flatten) DNA data
                 getline(f, line);
 
